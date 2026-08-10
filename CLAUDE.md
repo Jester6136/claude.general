@@ -13,7 +13,9 @@
 
 **Mục lục:** §0 cách đọc · **§1 bảy luật bất di bất dịch** · §2 chọn quy mô S/M/L · §3 Tier 0 (4 file luôn
 có) · §4 danh mục theo tầng · §5 khuôn mẫu copy-paste · §6 kỷ luật số · §7 vòng đời + DoD · §8 ép bằng
-máy · §9 tra triệu chứng→luật · §10 Sprint 0 · **§11 các tuỳ chọn [OPT]** · **§11b git làm hệ quản lý tài liệu/việc** · §12 ba thứ không nên làm.
+máy · §9 tra triệu chứng→luật · §10 Sprint 0 · **§11 các tuỳ chọn [OPT]** · **§11b git làm hệ quản lý
+tài liệu/việc** (+ constitution.md · quy ước nhánh agent/* · run record · tách SPEC/PLAN) · §12 ba thứ
+không nên làm.
 
 ## 0. Cách đọc file này — phân biệt BẮT BUỘC với TUỲ CHỌN
 
@@ -439,9 +441,10 @@ flowchart TB
 
     subgraph D["📚 DOCS — tri thức BỀN, sống trong repo"]
         D1["Glossary<br/>tên gọi"]
-        D2["ADR Log<br/>vì sao"]
+        D2["ADR Log<br/>vì sao (một quyết định)"]
         D3["Spec/Architecture<br/>hợp đồng"]
         D4["PROGRESS/HANDOFF<br/>đang ở đâu"]
+        D5["constitution.md [OPT]<br/>luật hằng số, mọi phiên"]
     end
 
     H1 -->|"giao việc"| I
@@ -452,6 +455,7 @@ flowchart TB
     A1 -.->|"đọc để hiểu ĐÚNG nghĩa"| D1
     A1 -.->|"đọc để không tự quyết"| D2
     A3 -.->|"tuân thủ hợp đồng"| D3
+    A1 -.->|"đọc luật hằng số trước khi nhận việc"| D5
     P --> C
     C -->|"ĐỎ → agent tự sửa, quay lại"| A3
     C -->|"XANH"| H3
@@ -469,7 +473,7 @@ flowchart TB
     class H1,H2,H3 human
     class I,B,P,C,M git
     class A1,A2,A3,A4 agent
-    class D1,D2,D3,D4 doc
+    class D1,D2,D3,D4,D5 doc
 ```
 
 **Đọc sơ đồ này ra bốn ý:**
@@ -482,6 +486,20 @@ flowchart TB
    quay lại Issue, không tự quyết. Không có mũi tên này thì Issue chỉ là hình thức.
 4. **Docs không nằm trong vòng lặp thực thi — chúng là thứ vòng lặp ĐỌC và GHI vào.** Agent đọc
    Glossary/ADR để hiểu đúng nghĩa; merge ghi ngược lại trạng thái + bài học.
+
+### `constitution.md` — [OPT] tầng luật riêng cho agent, tách khỏi ADR Log
+
+ADR trả lời **"vì sao một quyết định cụ thể"** — gắn với bối cảnh, có thể Superseded (L4). Nhưng có một
+loại luật khác hẳn: **hằng số áp cho MỌI phiên agent, không gắn bối cảnh nào** — quy ước code style bắt
+buộc, danh sách file/thư mục **cấm đụng toàn cục** (khác "phạm vi cấm" của riêng một Issue), lệnh luôn
+phải chạy trước khi mở PR. Nhét loại luật này vào ADR thì mỗi ADR mới lại phải nhắc lại; nhét vào Issue
+thì lặp N lần. Một file `constitution.md` cạnh Tier 0, agent đọc nó y như đọc Glossary/ADR (thêm một ô
+D5 vào subgraph DOCS ở trên), sửa qua PR như tài liệu thường (Loại 1/2 ở L4 — bổ sung/sửa lỗi, không cần
+ADR trừ khi đảo ngược một luật đã có).
+
+**Khi nào cần [TRIGGER]:** agent bắt đầu **lặp lại cùng một lỗi phạm vi/style ở nhiều Issue khác nhau** —
+dấu hiệu luật đó thuộc về mọi phiên, không thuộc về một quyết định. **Chưa cần:** ADR nền tảng (L1) đang
+đủ, ít agent-session, project mới ở mức S.
 
 ### Người được ĐÁNH THỨC lúc nào — cơ chế thông báo
 
@@ -541,6 +559,17 @@ Thêm Issue mà vẫn giữ bảng TODO trong docs = **hai nguồn sự thật**
 
 Nối hai chiều: Issue trỏ mục doc liên quan; doc ghi bài học kèm số Issue. Mỗi loại vẫn đúng một nhà.
 
+### [OPT] Quy ước tên nhánh cho agent — `agent/<issue-id>-<slug>`
+
+Ví dụ: `agent/42-fix-quota-closure-bug`. Tiền tố `agent/` (hoặc `ai/`, miễn nhất quán) làm hai việc:
+báo cho reviewer **trước khi mở diff** đây là code máy viết, và cho phép áp **branch-protection riêng**
+cho nhánh agent (vd bắt buộc CI xanh, cấm force-push) khác với nhánh người. Lợi ích đo được:
+`git branch --list 'agent/*'` liệt kê đúng và chỉ đúng mọi nhánh agent đang mở.
+
+★ Cộng đồng đang chia phe về việc có nên đánh dấu **từng dòng** do agent viết trong `git blame` hay
+không — phe cho rằng ai commit thì người đó chịu trách nhiệm, không cần nhãn theo dòng. Quy ước **theo
+nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy trình (branch/PR), không nằm ở cấp dòng code.
+
 ### Bốn cổng, theo thứ tự tăng dần chi phí
 
 | Cổng | Nội dung | Chi phí | Đáng làm khi |
@@ -556,13 +585,29 @@ kể cả lỗi tự mâu thuẫn trong header tài liệu), nhưng đừng gọ
 ### Hai mẫu Issue đủ dùng
 - **`decision-needed`** → đầu vào của một ADR. Bắt buộc: bối cảnh · các phương án · thứ **KHÔNG** thuộc
   phạm vi quyết định này. Đóng khi ADR merge.
-- **`agent-ready`** (Story) → việc code được ngay. Bắt buộc: yêu cầu **trích nguyên văn** từ tài liệu
-  nguồn (không diễn giải lại — paraphrase là nơi hiểu sai chui vào) · vị trí file · tiêu chí chấp nhận ·
-  **phạm vi KHÔNG được đụng** · **Blocked by**.
+- **`agent-ready`** (Story) → việc code được ngay. Tách **hai khối bên trong Issue**, vì độ bất biến khác
+  nhau (áp dụng khi Issue đủ phức tạp để "cách làm" có thể sai dù "yêu cầu" đúng — Issue nhỏ giữ gộp
+  như cũ):
+  - **SPEC (bất biến trong phiên):** yêu cầu **trích nguyên văn** từ tài liệu nguồn (không diễn giải lại
+    — paraphrase là nơi hiểu sai chui vào) · vị trí file · tiêu chí chấp nhận · **phạm vi KHÔNG được
+    đụng** · **Blocked by**.
+  - **PLAN (agent điền, SỬA ĐƯỢC giữa chừng):** cách làm dự kiến · thứ tự bước · file dự kiến đụng tới.
+    Cách làm sai thì sửa PLAN và ghi lại vì sao; **không** đóng Issue viết lại từ đầu, vì SPEC vẫn đúng.
 
 ★ **Overlap scan trước khi code** (2 phút, thủ công): liệt kê 2–3 Issue gần nhất cùng nhóm, xem có ai
 đang làm cùng một bài toán không. *Tiền lệ thật:* hai Story song song viết **hai hàm độc lập cho cùng
 một việc**, chỉ lộ ra sau khi cả hai đã merge.
+
+### [OPT] Run record trong PR/MR — nhật ký phiên chạy của agent
+
+Mô tả PR/MR do agent mở nên có thêm, ngoài `Closes #NN`: **quyền công cụ** agent được cấp trong phiên đó
+(đọc/ghi file, network, shell) · **model + version** đã dùng · **ngoại lệ chính sách** nếu có (vd được
+phép bỏ qua một rule lint cụ thể). Không phải để trang trí — khi có sự cố, câu cần trả lời là *"agent
+được phép làm gì lúc đó"*, không phải chỉ *"agent đã làm gì"* (cái sau đã có sẵn trong diff).
+
+**Khi nào cần [TRIGGER]:** agent có quyền **thực thi thật** (chạy shell, gọi network, không chỉ sửa
+file tĩnh). **Chưa cần:** agent chỉ có quyền đọc/sửa file trong sandbox, không có quyền thực thi ngoài
+`make check`.
 
 ### Nếu nền là GitLab (không phải GitHub) — bảng quy đổi
 | GitHub | GitLab | Lưu ý |
