@@ -19,6 +19,14 @@ Phương án O7-A đầy đủ: **Issue = kho TODO · MR/PR = đơn vị review 
 Đây là cách bỏ được các file trạng thái tự viết (`ISSUES.md`, bảng TODO thủ công) — trạng thái sống ở
 nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown phải nhớ cập nhật bằng tay.
 
+★ **Lý do mạnh nhất để chọn O7-A thường KHÔNG phải "nhiều người"** — một người + một agent vẫn chạy tốt
+với O7-B (§TODO trong text, xem `CLAUDE.md` §11 khuyến nghị mặc định). Lý do mạnh nhất là **≥2 agent
+chạy đồng thời trên cùng repo**, kể cả khi cả hai đều do một người vận hành: N agent cùng ghi vào một
+file `§TODO` = xung đột merge liên tục và không agent nào thấy agent khác đang làm gì; N agent mỗi con
+một Issue + một worktree/branch (`agent/<issue-id>-<slug>`, xem dưới) + một PR = cô lập tự nhiên, không
+ai giẫm lên việc của ai, và `git branch --list 'agent/*'` liệt kê đúng ai đang làm gì tại mọi thời điểm.
+Đây là bài toán **concurrency**, không phải bài toán "cần dấu vết thảo luận".
+
 ### Toàn cảnh: git trở thành **mặt bàn điều hành** cho cả người lẫn agent
 
 Mô hình dưới đây **quan sát được ở một project có thật** đang chạy theo cách này (một người đóng cả ba

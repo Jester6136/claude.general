@@ -411,16 +411,26 @@ không tự đổi kiểu giữa chừng — **nhất quán quan trọng hơn ph
 | O4 | **Đánh số tài liệu** | A: số theo tầng (`01-…`, `20-…`) · B: tên ngữ nghĩa (`algorithm.md`) | Bộ lớn, cần thứ tự đọc rõ ràng | Bộ nhỏ, tên tự nói lên nội dung, tránh việc "chèn số" khó xử |
 | O5 | **Version tài liệu** | A: **semver** trong header + lịch sử bump · B: chỉ dựa vào `git log` | Có người ngoài đọc/duyệt, cần trạng thái Approved | Một người, đọc `git log` là đủ, muốn tránh chi phí bump |
 | O6 | **Traceability Matrix** | A: có bảng riêng (yêu cầu ↔ thiết kế ↔ test) · B: link tại chỗ | Có audit/nghiệm thu, hoặc >30 yêu cầu | Bộ nhỏ — bảng riêng sẽ lệch nhanh hơn nó giúp |
-| O7 | **Quy trình duyệt** | A: Discussion → Issue → PR/MR → merge=Approved (xem §11b) · B: sửa thẳng, ADR khi đảo quyết định | Nhiều người, cần dấu vết thảo luận | Một người + tốc độ cao (áp A là tự trói) |
+| O7 | **Quy trình duyệt** | A: Discussion → Issue → PR/MR → merge=Approved (xem §11b) · B: sửa thẳng, ADR khi đảo quyết định | Nhiều người, cần dấu vết thảo luận · **HOẶC nhiều AGENT chạy song song trên cùng repo (dù chỉ 1 người vận hành)** — Issue = đơn vị việc cô lập, PR = đơn vị review cô lập, tránh N agent cùng sửa một file TODO văn bản (xung đột merge liên tục, không ai biết agent nào đang làm gì) | Một người, **một agent tại một thời điểm**, tốc độ cao (áp A lúc này mới là tự trói) |
 | O8 | **Tài liệu người dùng** | A: theo **Diátaxis** (tutorial/how-to/reference/explanation) · B: một `huong-dan-su-dung.md` | Có người dùng ngoài thật sự | Còn PoC/nội bộ |
 | O9 | **Ngôn ngữ** | A: tiếng Việt · B: tiếng Anh · C: lai (thuật ngữ giữ nguyên tiếng Anh) | Người đọc là team Việt | Có cộng tác viên ngoài / định mở nguồn |
 | O10 | **Sơ đồ** | A: Mermaid trong markdown · B: drawio/Excalidraw xuất PNG | Muốn diff được, sửa được bằng agent | Sơ đồ trình bày, nhiều bố cục thủ công |
 | O11 | **File trạng thái phiên** | A: có `HANDOFF.md` · B: không, dựa vào issue tracker | Làm việc cùng agent, hay bị nén ngữ cảnh | Có tracker kỷ luật tốt và luôn cập nhật |
 
-**Khuyến nghị mặc định cho project kiểu "một người + agent AI, tốc độ cao, người dùng nội bộ"**:
-O1-A · O2-A · O3-A · O4-B · O5-B · O6-B · O7-B · O8-B · O9-A · O10-A · O11-A. Lên mức M/L thì đảo dần
-sang A ở O5/O6/O7 — và khi đổi, **ghi lý do đổi như một ADR** (chính bộ tài liệu cũng là một hệ thống có
-quyết định kiến trúc).
+**Khuyến nghị mặc định cho project kiểu "một người + MỘT agent AI tại một thời điểm, tốc độ cao, người
+dùng nội bộ"**: O1-A · O2-A · O3-A · O4-B · O5-B · O6-B · O7-B · O8-B · O9-A · O10-A · O11-A. Lên mức M/L
+thì đảo dần sang A ở O5/O6/O7 — và khi đổi, **ghi lý do đổi như một ADR** (chính bộ tài liệu cũng là một
+hệ thống có quyết định kiến trúc).
+
+★ **O7 có một trigger đảo riêng, độc lập với quy mô S/M/L:** quy mô S/M/L đo theo **số người**; O7-A vs
+O7-B đo theo **số agent chạy đồng thời** — hai trục khác nhau, đừng gộp. Một người vận hành N agent song
+song (mỗi agent một Issue, một worktree, một PR) vẫn là project quy mô **S** về khối lượng tài liệu, nhưng
+đã cần O7-A về quy trình, vì lý do KHÔNG phải "dấu vết thảo luận cho nhiều người" mà là **tránh đụng độ
+ghi**: N agent cùng sửa một file `roadmap.md §TODO` = xung đột merge liên tục và không agent nào biết
+agent khác đang làm gì; N agent mỗi con một Issue/branch/PR = cô lập tự nhiên, đúng thứ Issue/PR vốn được
+thiết kế để giải quyết. Đảo sang O7-A tại đây **không cần ADR** như câu ở trên gợi ý cho việc lên M/L —
+chỉ cần ghi lại ở `docs/README.md` là đã đảo, kèm lý do "chạy song song ≥2 agent" (đây là Loại 2 ở L4 —
+bổ sung/làm rõ một lựa chọn vốn đã có sẵn hai nhánh trong bảng, không phải đảo ngược một quyết định).
 
 ---
 
