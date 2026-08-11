@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# pre-push — kỷ luật, KHÔNG phải cưỡng chế. Bỏ qua được bằng `git push --no-verify`.
+# Cài: chạy scripts/install-hooks.sh (git KHÔNG version .git/hooks — mỗi người clone phải tự cài).
+#
+# Cố ý CHỈ chạy tầng TĨNH (syntax+boundary+lint), không chạy test đầy đủ: push chậm ⇒ người ta
+# --no-verify cho xong, cổng mất tác dụng (GIT-FLOW.md §11b). CI (nếu có runner) là lưới thứ hai, chạy
+# đầy đủ hơn — đây KHÔNG thay thế CI.
+set -euo pipefail
+echo "── pre-push: chạy cổng tĩnh (bỏ qua: git push --no-verify) ──"
+repo_root="$(git rev-parse --show-toplevel)"
+"$repo_root/scripts/check.sh" --syntax
+"$repo_root/scripts/check.sh" --boundary
+"$repo_root/scripts/check.sh" --lint

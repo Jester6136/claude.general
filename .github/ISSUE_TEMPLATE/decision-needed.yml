@@ -1,0 +1,23 @@
+name: "decision-needed — đầu vào của một ADR"
+description: "Quyết định kiến trúc/hướng đi chưa chốt. Đóng khi ADR merge vào adr-log.md."
+labels: ["decision-needed"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: "Bối cảnh — vì sao phải quyết BÂY GIỜ"
+      description: "Rủi ro 2 chiều nếu chọn sai."
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: "Các phương án đang cân nhắc"
+      description: "Chưa cần chốt đánh giá — đó là việc của ADR khi merge."
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: "Thứ KHÔNG thuộc phạm vi quyết định này"
+      description: "Ngăn quyết định lan ra ngoài chủ đề — CLAUDE.md L1: chỉ 3-5 ADR trả lời 'hệ này là gì'."

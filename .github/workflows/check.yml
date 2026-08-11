@@ -1,0 +1,38 @@
+name: check
+
+# Cổng chất lượng TẦNG A — static + smoke thuần + test plumbing. Tầng B (cần GPU/LLM/DB sống, xem
+# AGENT.md §4) KHÔNG chạy ở đây. Workflow này CHỈ gọi scripts/check.sh — không viết lại logic kiểm
+# trong YAML (một nơi định nghĩa cổng, hai nơi gọi: máy dev + CI — xem GIT-FLOW.md).
+#
+# TODO trước khi dùng: điền bước "Cài dependency" đúng ngôn ngữ/gói của project, và điền các lệnh còn
+# TODO trong scripts/check.sh.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: check.sh --all
+    runs-on: ubuntu-latest
+    # Runner hosted có giới hạn phút — chặn treo bằng timeout, không để job chạy vô hạn.
+    timeout-minutes: 15
+    env:
+      CI: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: thay bước setup ngôn ngữ cho đúng project (setup-python / setup-node / …).
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: "3.12"
+      #     cache: pip
+
+      - name: Cài dependency
+        run: |
+          echo 'TODO: pip install -r requirements.txt (hoặc npm ci, v.v.)'
+
+      - name: check.sh --all (static + smoke thuần + test plumbing)
+        run: ./scripts/check.sh --all

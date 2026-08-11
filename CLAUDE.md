@@ -2,8 +2,9 @@
 
 > **File này là gì:** phương pháp luận viết tài liệu, **không gắn với một project cụ thể**. Chép nguyên
 > file này sang repo mới, thay `<PROJ>` bằng tên project, rồi làm theo §10 (Sprint 0 trong 1 ngày).
-> **File này KHÔNG phải:** quy tắc vận hành agent (ranh giới hành động, kỷ luật hạ tầng, commit/push) —
-> thứ đó thuộc `AGENT.md`/`AGENTS.md` cạnh nó. Hai file, hai việc, đừng trộn.
+> **File này KHÔNG phải:** quy tắc vận hành agent (ranh giới hành động, kỷ luật hạ tầng, commit/push,
+> tự-review trước khi báo "xong") — thứ đó thuộc `AGENT.md`/`AGENTS.md` cạnh nó, và §0.5 ngay dưới đây
+> bắt agent đọc nó mỗi phiên. Hai file, hai việc, đừng trộn.
 >
 > **Nguồn đúc kết:** hai bộ tài liệu **có thật, đang vận hành**, ở hai quy mô đối lập — (a) bộ ~6 tài
 > liệu gọn, bám sát code, mọi tuyên bố kèm lệnh verify, của một project do **một người + agent AI** làm
@@ -11,10 +12,16 @@
 > matrix, quy trình duyệt đầy đủ. Không bộ nào "đúng hơn" bộ nào — chúng đúng với quy mô của chúng.
 > §2 dạy cách **chọn quy mô**, thay vì chép mù một bộ.
 
-**Mục lục:** §0 cách đọc · **§1 bảy luật bất di bất dịch** · §2 chọn quy mô S/M/L · §3 Tier 0 (4 file luôn
-có) · §4 danh mục theo tầng · §5 khuôn mẫu copy-paste · §6 kỷ luật số · §7 vòng đời + DoD · §8 ép bằng
-máy · §9 tra triệu chứng→luật · §10 Sprint 0 · **§11 các tuỳ chọn [OPT]** · §11b git làm hệ quản lý việc
-(chi tiết ở **`GIT-FLOW.md`** cạnh file này — chỉ đọc khi đã chọn O7-A) · §12 ba thứ không nên làm.
+**Mục lục:** §0 cách đọc · **§0.5 bootstrap `AGENT.md` [BẮT BUỘC]** · **§1 bảy luật bất di bất dịch** · §2
+chọn quy mô S/M/L · §3 Tier 0 (4 file luôn có) · §4 danh mục theo tầng · §5 khuôn mẫu copy-paste · §6 kỷ
+luật số · §7 vòng đời + DoD · §8 ép bằng máy · §9 tra triệu chứng→luật · §10 Sprint 0 · **§11 các tuỳ
+chọn [OPT]** · §11b git làm hệ quản lý việc (chi tiết ở **`GIT-FLOW.md`** cạnh file này — chỉ đọc khi đã
+chọn O7-A) · §12 ba thứ không nên làm.
+
+> **Bắt đầu project mới?** Đừng chỉ chép file này — có sẵn bộ khung copy-paste đầy đủ (AGENT.md ·
+> `templates/` · `.github/` issue-forms + PR template + workflow CI) trong repo chứa file này
+> ([claude.general](https://github.com/Jester6136/claude.general)). Xem `README.md` ở gốc repo đó để
+> bootstrap trong 1 ngày theo §10.
 
 ## 0. Cách đọc file này — phân biệt BẮT BUỘC với TUỲ CHỌN
 
@@ -33,6 +40,21 @@ máy · §9 tra triệu chứng→luật · §10 Sprint 0 · **§11 các tuỳ c
 - Con số cụ thể trong file (66,4%→45,0%; 84/125 tệp; 90,5%; 337 lỗi lint) là **số đo thật đã ghi lại**,
   không phải ví dụ minh hoạ. Chúng đứng ở đây với vai trò *bằng chứng rằng lỗi kiểu đó xảy ra thật* —
   đừng chép sang project của bạn như thể là chỉ tiêu.
+
+## 0.5. [BẮT BUỘC] Bootstrap `AGENT.md` — lý do file này phải nằm NGAY ĐẦU CLAUDE.md
+
+`CLAUDE.md` được Claude Code **tự động tải mỗi phiên**; `AGENT.md`/`AGENTS.md` (quy tắc vận hành —
+ranh giới hành động, kỷ luật hạ tầng, commit/push, §6 bằng chứng-trước-khi-tuyên-bố) thì **KHÔNG** tự
+tải — nó chỉ có tác dụng nếu có ai/cái gì nhắc agent đọc nó. Đặt dòng này ở đây, không phải cuối file,
+vì "đọc trước khi làm gì cả" chỉ đúng nghĩa khi nó là điều ĐẦU TIÊN agent thấy:
+
+> **Nếu repo này có `AGENT.md` (hoặc `AGENTS.md`) ở gốc, ĐỌC NÓ trước khi code/sửa tài liệu bất kỳ việc
+> gì trong phiên này** — kể cả khi user không nhắc. File đó chứa ranh giới hành động và bước tự-review
+> bắt buộc trước khi báo "xong". Không có file đó ⇒ bỏ qua bước này, không tự bịa ra quy tắc.
+
+Đây là cơ chế khiến kỷ luật "chỉnh chu" xảy ra **ở MỌI phiên/mọi trao đổi**, không phụ thuộc agent có
+nhớ lại từ hội thoại trước hay không — vì `CLAUDE.md` (nơi câu lệnh này nằm) luôn được tải, còn trí nhớ
+hội thoại thì không.
 
 ---
 

@@ -1,0 +1,51 @@
+name: "agent-ready — việc code được ngay"
+description: "Story cho agent làm. Xem GIT-FLOW.md §11b — SPEC bất biến trong phiên, PLAN sửa được giữa chừng."
+labels: ["agent-ready"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **SPEC (bất biến trong phiên)** — trích NGUYÊN VĂN, không diễn giải lại. Paraphrase là chỗ hiểu
+        sai chui vào. Issue nhỏ có thể để trống PLAN, gộp mọi thứ vào SPEC.
+  - type: textarea
+    id: requirement
+    attributes:
+      label: "Yêu cầu (trích nguyên văn từ tài liệu nguồn)"
+      description: "Copy-paste nguyên văn từ spec/chat/doc — không tự viết lại bằng lời của bạn."
+    validations:
+      required: true
+  - type: input
+    id: files
+    attributes:
+      label: "Vị trí file dự kiến chạm"
+      placeholder: "src/module/foo.py, docs/algorithm.md §3"
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: "Tiêu chí chấp nhận (chép từ nguồn, không tự viết lại)"
+    validations:
+      required: true
+  - type: textarea
+    id: out_of_scope
+    attributes:
+      label: "Phạm vi KHÔNG được đụng vào"
+      description: "Giới hạn bán kính thiệt hại — càng cụ thể càng tốt."
+  - type: input
+    id: blocked_by
+    attributes:
+      label: "Blocked by (Issue/PR nào phải xong trước, nếu có)"
+  - type: input
+    id: related_repos
+    attributes:
+      label: "Repo liên quan (nếu việc chạm >1 repo — GIT-FLOW.md §11c)"
+      description: "Liệt kê hết; mỗi repo một Issue riêng, trỏ nhau bằng Blocked by/Blocks owner/repo#N."
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        **PLAN (agent điền, sửa được giữa chừng)** — cách làm dự kiến. Sai thì sửa PLAN + ghi lý do,
+        KHÔNG đóng Issue viết lại từ đầu vì SPEC ở trên vẫn đúng.
+  - type: textarea
+    id: plan
+    attributes:
+      label: "Cách làm dự kiến (agent điền sau khi đọc SPEC + overlap scan)"
