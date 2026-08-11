@@ -19,13 +19,12 @@ Phương án O7-A đầy đủ: **Issue = kho TODO · MR/PR = đơn vị review 
 Đây là cách bỏ được các file trạng thái tự viết (`ISSUES.md`, bảng TODO thủ công) — trạng thái sống ở
 nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown phải nhớ cập nhật bằng tay.
 
-★ **Lý do mạnh nhất để chọn O7-A thường KHÔNG phải "nhiều người"** — một người + một agent vẫn chạy tốt
-với O7-B (§TODO trong text, xem `CLAUDE.md` §11 khuyến nghị mặc định). Lý do mạnh nhất là **≥2 agent
-chạy đồng thời trên cùng repo**, kể cả khi cả hai đều do một người vận hành: N agent cùng ghi vào một
-file `§TODO` = xung đột merge liên tục và không agent nào thấy agent khác đang làm gì; N agent mỗi con
-một Issue + một worktree/branch (`agent/<issue-id>-<slug>`, xem dưới) + một PR = cô lập tự nhiên, không
-ai giẫm lên việc của ai, và `git branch --list 'agent/*'` liệt kê đúng ai đang làm gì tại mọi thời điểm.
-Đây là bài toán **concurrency**, không phải bài toán "cần dấu vết thảo luận".
+**Điều kiện đảo sang O7-A:** ≥2 agent chạy đồng thời trên cùng repo, đo độc lập với số người vận hành
+(`CLAUDE.md` §11, ngay dưới bảng O). Cơ chế: N agent cùng ghi vào một file `§TODO` tạo xung đột merge và
+không agent nào thấy agent khác đang làm gì; N agent mỗi con một Issue + worktree/branch
+(`agent/<issue-id>-<slug>`, xem dưới) + một PR cô lập việc theo agent — `git branch --list 'agent/*'`
+liệt kê đúng ai đang làm gì tại mọi thời điểm. Một người + một agent tại một thời điểm không cần O7-A;
+§TODO trong text (O7-B) đủ.
 
 ### Toàn cảnh: git trở thành **mặt bàn điều hành** cho cả người lẫn agent
 
@@ -165,6 +164,37 @@ người tắt thông báo = mất luôn cả 4 cái quan trọng.
 
 Áp nghi lễ MR khi CI chưa chạy thì "merge = đã qua test" chỉ là lời tuyên bố — đúng thứ L5 cấm, và tệ
 hơn không áp vì nó tạo cảm giác an toàn giả.
+
+### Kích hoạt O7-A giữa chừng một project đang chạy O7-B
+
+Áp dụng khi project đã có nội dung thật ở O7-B (roadmap `§TODO` đang chứa việc đang mở, không phải file
+rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời, `CLAUDE.md` §11). Thứ tự, không đảo bước:
+
+1. **Kiểm Issue tracker sạch trước khi chuyển:** `gh issue list --state all -R <owner>/<repo>`. Có Issue
+   cũ đang mở từ trước ⇒ xử lý/đóng trước, tránh nhầm giữa "đã có sẵn từ khi khác" và "mới mở do chuyển
+   đổi lần này".
+2. **Ghi quyết định bằng một ADR** (`ADR-<PROJ>-NNN`, hoặc `ADR-ECO-NNN` nếu ảnh hưởng ≥2 repo, §11c) —
+   Nygard, liệt kê rõ phương án bị loại và vì sao (không chỉ phương án được chọn).
+3. **Đảo O2 cùng lúc nếu `adr-log.md` đang là một file** — cùng nguyên nhân concurrency, không phải hai
+   quyết định độc lập. Tách thành `adr-log/`, một file/ADR (tên `ADR-<PROJ>-NNN-<slug>.md`, ID là định
+   danh thật theo L3, slug chỉ để lướt thư mục) + một `README.md` làm index. Sau khi tách: `grep -rn
+   "adr-log\.md"` trên toàn repo, sửa **mọi** file trỏ tới đường dẫn cũ — không chỉ file gọi trực tiếp.
+4. **Dựng scaffolding trước khi mở Issue đầu tiên:** `.github/ISSUE_TEMPLATE/{agent-ready,decision-
+   needed}.yml` + `PULL_REQUEST_TEMPLATE.md` (mẫu ở `templates/`/`.github/` cạnh file này). Tạo label
+   `agent-ready`/`decision-needed` nếu repo chưa có (`gh label create`) — `gh issue create --label` báo
+   lỗi nếu label chưa tồn tại.
+5. **Migrate JIT (just-in-time), không dump toàn bộ backlog.** Một mục `§TODO` chỉ được viết thành Issue
+   thật khi đủ 5 mục brief tự chứa (§7.3-tương-đương của `AGENT.md`) **và** sắp được cầm lên làm — không
+   mở Issue thô hàng loạt trước cho cả backlog (Issue là ĐẶC TẢ, viết TODO nguyên văn vào Issue không đạt
+   chuẩn đó). `roadmap.md`/`§TODO` cũ đổi vai trò thành backlog + sổ lịch sử: mục đã đóng trước ngày
+   chuyển giữ nguyên làm bằng chứng, không migrate hồi tố.
+6. **Seed 1–2 Issue thật trước khi coi bước này xong.** Dựng khung (bước 4) mà chưa mở Issue nào là chưa
+   chứng minh luồng chạy được — `gh issue create` thật, không phải bản nháp trong đầu.
+7. **Sau khi seed, quét lại con trỏ cũ.** Mọi chỗ trong docs từng trỏ vào mục `§TODO` vừa migrate phải
+   đổi thành link Issue thật (`→ Issue #N`), không giữ cả hai cùng là "nguồn việc-đang-mở" (L2). Đồng
+   thời rà các số liệu liên quan đã đổi cùng thời điểm nhưng nằm ở file khác (vd một bảng đếm số test-đỏ
+   ở file A không tự cập nhật khi test được sửa ở file B) — quét bằng cách tìm mọi chỗ trích dẫn cùng
+   con số/đường dẫn vừa đổi, không chỉ sửa nơi trực tiếp liên quan đến thay đổi.
 
 ### Chia việc giữa Issue và Docs — giữ L2 (một loại sự thật, một nhà)
 Thêm Issue mà vẫn giữ bảng TODO trong docs = **hai nguồn sự thật**. Chia theo **tuổi thọ thông tin**:

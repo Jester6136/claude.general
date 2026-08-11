@@ -49,21 +49,17 @@ thật · §4 test — CI tự kiểm vs cần hạ tầng sống · §5 commit/
 
 ## 3. Ghi Issue / Feature / Task — MỘT nguồn sự thật, không phân mảnh
 
-Chọn MỘT trong hai theo O7 (`CLAUDE.md` §11), ghi rõ đã chọn cái nào. **Phép thử để chọn không phải "có
-mấy người" mà là "có mấy AGENT chạy ĐỒNG THỜI trên repo này":**
+Chọn MỘT trong hai theo O7 (`CLAUDE.md` §11). Điều kiện chọn: số AGENT chạy đồng thời trên repo này, không
+phải số người vận hành (`CLAUDE.md` §11, dưới bảng O). Ghi rõ trong `docs/README.md` đã chọn cái nào.
 
-- **O7-B (mặc định khi CHỈ MỘT agent tại một thời điểm):** mọi vòng "raise issue → fix → verify" ghi vào
+- **O7-B (mặc định khi chỉ một agent tại một thời điểm):** mọi vòng "raise issue → fix → verify" ghi vào
   `<roadmap>.md §TODO` (mục có sẵn khớp chủ đề, hoặc thêm mục mới cùng khuôn ở `CLAUDE.md` §5.4). Trạng
-  thái: `⬜` chưa làm · `🔨` code xong chưa verify · `✅` code+verify · `★` bài học đáng nhớ. **Không tạo
-  file log rời** (`ISSUES.md`/`CHANGELOG.md`) — phân mảnh tri thức là cách mất nó.
-- **O7-A (git-as-management, xem `GIT-FLOW.md`) — bắt buộc cân nhắc ngay khi có ≥2 agent chạy song song,
-  kể cả nếu chỉ có 1 người vận hành cả hai:** GitHub/GitLab Issue là nguồn sự thật cho việc đang mở, mỗi
-  agent một Issue + một worktree/branch (`agent/<issue-id>-<slug>`) + một PR. Lý do KHÔNG phải "cần dấu
-  vết thảo luận" — mà là N agent cùng sửa một file `§TODO` văn bản sẽ xung đột merge liên tục và không
-  agent nào biết agent khác đang làm gì; Issue/PR cô lập việc theo agent, đúng thứ nó sinh ra để làm
-  (xem `CLAUDE.md` §11 O7, mục "★ O7 có trigger đảo riêng"). `§TODO` (nếu còn tồn tại song song trong
-  lúc chuyển đổi) chỉ là nguồn phụ tạm thời — nói rõ trong README.md dự án đang ở giai đoạn nào của quá
-  trình chuyển, đừng để cả hai cùng là "nguồn chính".
+  thái: `⬜` chưa làm · `🔨` code xong chưa verify · `✅` code+verify · `★` bài học đáng nhớ. Không tạo
+  file log rời (`ISSUES.md`/`CHANGELOG.md`) — phân mảnh tri thức là cách mất nó.
+- **O7-A (git-as-management, xem `GIT-FLOW.md`), khi ≥2 agent chạy đồng thời trên repo, kể cả nếu cả hai
+  do một người vận hành:** GitHub/GitLab Issue là nguồn sự thật cho việc đang mở; mỗi agent một Issue +
+  worktree/branch (`agent/<issue-id>-<slug>`) + một PR. Chuyển từ O7-B sang O7-A trên một project đang
+  chạy: `GIT-FLOW.md` §11b "Kích hoạt O7-A giữa chừng" — có thứ tự bước cụ thể, không tuỳ tiện đảo.
 
 Đổi TODO/Issue **CÙNG COMMIT** với code fix — doc lệch code = nợ kỹ thuật, coi như việc chưa xong.
 

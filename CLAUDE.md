@@ -406,7 +406,7 @@ không tự đổi kiểu giữa chừng — **nhất quán quan trọng hơn ph
 | # | Điểm chọn | Phương án | Chọn A khi | Chọn B khi |
 |---|---|---|---|---|
 | O1 | **Nơi để tài liệu** | A: trong repo (`docs/`) · B: wiki/Notion/Confluence | Tài liệu đổi cùng nhịp code, muốn review chung PR, muốn CI check | Người đọc chính là phi kỹ thuật, cần bình luận/nhúng phong phú |
-| O2 | **Cấu trúc ADR** | A: gộp một `adr-log.md` · B: mỗi ADR một file `adr/0007-*.md` | < ~15 ADR, muốn đọc liền mạch | Nhiều ADR, nhiều người viết song song (tránh xung đột merge) |
+| O2 | **Cấu trúc ADR** | A: gộp một `adr-log.md` · B: mỗi ADR một file `adr/0007-*.md` | < ~15 ADR, muốn đọc liền mạch | Nhiều ADR, nhiều người **hoặc nhiều agent** viết song song (tránh xung đột merge) |
 | O3 | **Định dạng ADR** | A: **Nygard** (Context/Decision/Consequences) · B: **MADR** (thêm bảng tiêu chí + "Considered Options") | Quyết định mang tính định hướng, lý do quan trọng hơn so sánh | Quyết định chọn-công-cụ, cần so sánh nhiều phương án theo tiêu chí |
 | O4 | **Đánh số tài liệu** | A: số theo tầng (`01-…`, `20-…`) · B: tên ngữ nghĩa (`algorithm.md`) | Bộ lớn, cần thứ tự đọc rõ ràng | Bộ nhỏ, tên tự nói lên nội dung, tránh việc "chèn số" khó xử |
 | O5 | **Version tài liệu** | A: **semver** trong header + lịch sử bump · B: chỉ dựa vào `git log` | Có người ngoài đọc/duyệt, cần trạng thái Approved | Một người, đọc `git log` là đủ, muốn tránh chi phí bump |
@@ -422,15 +422,14 @@ dùng nội bộ"**: O1-A · O2-A · O3-A · O4-B · O5-B · O6-B · O7-B · O8-
 thì đảo dần sang A ở O5/O6/O7 — và khi đổi, **ghi lý do đổi như một ADR** (chính bộ tài liệu cũng là một
 hệ thống có quyết định kiến trúc).
 
-★ **O7 có một trigger đảo riêng, độc lập với quy mô S/M/L:** quy mô S/M/L đo theo **số người**; O7-A vs
-O7-B đo theo **số agent chạy đồng thời** — hai trục khác nhau, đừng gộp. Một người vận hành N agent song
-song (mỗi agent một Issue, một worktree, một PR) vẫn là project quy mô **S** về khối lượng tài liệu, nhưng
-đã cần O7-A về quy trình, vì lý do KHÔNG phải "dấu vết thảo luận cho nhiều người" mà là **tránh đụng độ
-ghi**: N agent cùng sửa một file `roadmap.md §TODO` = xung đột merge liên tục và không agent nào biết
-agent khác đang làm gì; N agent mỗi con một Issue/branch/PR = cô lập tự nhiên, đúng thứ Issue/PR vốn được
-thiết kế để giải quyết. Đảo sang O7-A tại đây **không cần ADR** như câu ở trên gợi ý cho việc lên M/L —
-chỉ cần ghi lại ở `docs/README.md` là đã đảo, kèm lý do "chạy song song ≥2 agent" (đây là Loại 2 ở L4 —
-bổ sung/làm rõ một lựa chọn vốn đã có sẵn hai nhánh trong bảng, không phải đảo ngược một quyết định).
+**O2 và O7 có một trigger đảo chung, độc lập với quy mô S/M/L:** quy mô S/M/L (§2) đo theo số người;
+điều kiện đảo O2/O7 đo theo **số agent chạy đồng thời trên cùng repo**. Hai trục độc lập — một project
+quy mô S (1 người) với ≥2 agent chạy song song đã đủ điều kiện đảo O2-B/O7-A, không cần chờ lên M/L.
+Cơ chế: nhiều agent cùng ghi vào một file đang tăng dần (`adr-log.md`, `roadmap.md §TODO`) tạo xung đột
+merge; Issue/PR/ADR-theo-file cô lập việc theo agent. Đảo tại đây là Loại 2 theo L4 (bổ sung/làm rõ một
+nhánh đã có sẵn trong bảng, không đảo ngược quyết định nào) ⇒ không cần ADR-của-lựa-chọn, chỉ cần ghi lại
+ở `docs/README.md`. Quy trình đảo khi project đã có nội dung O7-B từ trước (roadmap §TODO đang chứa việc
+thật): `GIT-FLOW.md` §11b "Kích hoạt O7-A giữa chừng".
 
 ---
 
