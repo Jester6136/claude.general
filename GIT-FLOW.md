@@ -183,11 +183,14 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    needed}.yml` + `PULL_REQUEST_TEMPLATE.md` (mẫu ở `templates/`/`.github/` cạnh file này). Tạo label
    `agent-ready`/`decision-needed` nếu repo chưa có (`gh label create`) — `gh issue create --label` báo
    lỗi nếu label chưa tồn tại.
-5. **Migrate JIT (just-in-time), không dump toàn bộ backlog.** Một mục `§TODO` chỉ được viết thành Issue
-   thật khi đủ 5 mục brief tự chứa (§7.3-tương-đương của `AGENT.md`) **và** sắp được cầm lên làm — không
-   mở Issue thô hàng loạt trước cho cả backlog (Issue là ĐẶC TẢ, viết TODO nguyên văn vào Issue không đạt
-   chuẩn đó). `roadmap.md`/`§TODO` cũ đổi vai trò thành backlog + sổ lịch sử: mục đã đóng trước ngày
-   chuyển giữ nguyên làm bằng chứng, không migrate hồi tố.
+5. **Migrate JIT (just-in-time) cho việc CHƯA làm, không dump toàn bộ backlog.** Một mục `§TODO` chưa
+   đóng chỉ được viết thành Issue thật khi đủ 5 mục brief tự chứa (§7.3-tương-đương của `AGENT.md`) **và**
+   sắp được cầm lên làm — không mở Issue thô hàng loạt trước cho cả backlog (Issue là ĐẶC TẢ, viết TODO
+   nguyên văn vào Issue không đạt chuẩn đó). `roadmap.md`/`§TODO` cũ đổi vai trò thành backlog + sổ lịch
+   sử. Mục **đã đóng** trước ngày chuyển không bắt buộc có Issue, nhưng mở Issue rồi đóng ngay lúc tạo
+   (kèm link commit/verify trong phần đóng) là hợp lệ khi muốn có trace GitHub đầy đủ cho một cụm việc có
+   Issue anh em còn mở — không phải việc thừa, miễn giữ đúng nhãn "retroactive" trong nội dung Issue để
+   không ai đọc nhầm thành việc đang chờ làm.
 6. **Seed 1–2 Issue thật trước khi coi bước này xong.** Dựng khung (bước 4) mà chưa mở Issue nào là chưa
    chứng minh luồng chạy được — `gh issue create` thật, không phải bản nháp trong đầu.
 7. **Sau khi seed, quét lại con trỏ cũ.** Mọi chỗ trong docs từng trỏ vào mục `§TODO` vừa migrate phải
