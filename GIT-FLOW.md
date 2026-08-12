@@ -8,8 +8,8 @@
 > `CLAUDE.md` (bảy luật bất di bất dịch, cách chọn quy mô, Tier 0...). Đọc `CLAUDE.md` trước.
 >
 > **Mục lục:** §11b Git làm hệ quản lý tài liệu & việc (constitution.md · quy ước nhánh `agent/*` ·
-> run record · tách SPEC/PLAN) · §11c Hệ sinh thái nhiều repo (monorepo vs polyrepo · hub repo · ID cấp
-> ECO · CI dùng chung).
+> **GitHub Discussions trước khi thành Issue** · Hai mẫu Issue · run record · tách SPEC/PLAN) · §11c Hệ
+> sinh thái nhiều repo (monorepo vs polyrepo · hub repo · ID cấp ECO · CI dùng chung).
 
 ---
 
@@ -233,6 +233,59 @@ nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy tr
 ★ Một mình thì G4 là **tự-review**, không phải review độc lập — giữ *checklist* (nó bắt được lỗi thật,
 kể cả lỗi tự mâu thuẫn trong header tài liệu), nhưng đừng gọi tên sai bản chất.
 
+### [OPT] GitHub Discussions — trước khi thành Issue
+
+Khoảng trống trước đây trong file này: "Discussion" xuất hiện ở đầu chuỗi O7-A
+(`Discussion → Issue → PR/MR → merge=Approved`, `CLAUDE.md` §11) nhưng chưa có nơi nào nói **Discussions
+là gì cụ thể trên GitHub, khi nào dùng, và ai đọc**. Mục này bù chỗ đó.
+
+**Vì sao KHÔNG dùng thẳng Issue cho mọi thứ:** một `decision-needed` Issue (§ "Hai mẫu Issue" dưới đây)
+giả định bối cảnh đã đủ gọn để đóng khung thành phương án + quyết định — đúng hình dạng một ADR nháp.
+Nhưng nhiều thứ cần trao đổi **CHƯA** ở dạng đó: một audit/khảo sát dài, một câu hỏi mở còn nhiều hướng,
+một phát hiện cần ý kiến nhiều phía trước khi biết nên đóng khung quyết định thế nào. Nhét thẳng vào
+Issue ép người đọc phải phản hồi bằng thao tác Issue (đóng/gán/label) cho một thứ còn đang **hình thành
+ý** — sai công cụ. GitHub Discussions đúng vai trò này: threaded, không có trạng thái mở/đóng ép buộc,
+được thiết kế cho hội thoại nhiều lượt.
+
+**Phễu (funnel) — đừng bỏ bước nào:**
+```
+Discussion (mở, khảo sát + câu hỏi, CHƯA đóng khung phương án)
+   → owner/nhiều bên trao đổi ngay trong thread
+   → khi đã đủ rõ để đóng khung "phương án nào, chọn gì" → mở Issue `decision-needed`
+     LINK NGƯỢC về Discussion (không copy nội dung — L2 SSOT, xem CLAUDE.md §1)
+   → Issue đó thành ADR khi merge (§ "Hai mẫu Issue" dưới đây)
+```
+Nếu một Discussion không bao giờ cần bước 3 (thuần thông tin, không cần quyết định gì) — cứ để nó đứng
+yên ở đó, không phải mọi Discussion đều phải "tốt nghiệp" thành Issue.
+
+**Bật Discussions:** tắt theo mặc định trên repo mới.
+```bash
+gh api -X PATCH repos/<owner>/<repo> -f has_discussions=true
+```
+hoặc Settings → General → Features → Discussions trên GitHub UI.
+
+**Chọn category** (mặc định GitHub tạo sẵn 6 category, đừng bịa thêm category tuỳ ý — phân mảnh nơi tìm):
+| Category | Dùng khi |
+|---|---|
+| **Ideas** | Khảo sát/audit + câu hỏi mở cần owner quyết hướng (đúng use-case của mục này) |
+| **Q&A** | Câu hỏi có MỘT câu trả lời đúng, đóng khi trả lời xong (GitHub tự đánh dấu "answered") |
+| **General** | Trao đổi không rơi vào nhóm nào khác |
+| **Announcements** | Chỉ maintainer đăng — thông báo một chiều |
+| **Polls** | Cần biểu quyết nhanh giữa vài phương án |
+| **Show and tell** | Khoe demo/kết quả, không cần hành động gì tiếp |
+
+**Hệ nhiều repo (`§11c` CLAUDE.md) — chọn MỘT nơi host, đừng bật khắp nơi:** bật Discussions trên mọi
+repo trong một hệ sinh thái tạo đúng lỗi L2 (một loại sự thật, nhiều nhà) mà `CLAUDE.md` §1 cấm — người
+sau không biết thảo luận về X nằm ở repo nào. Chọn theo cùng logic "repo hub giữ Tier 0" (`GIT-FLOW.md`
+§11c "Một repo hub"): nếu có repo hub tài liệu riêng → host ở đó; nếu không, host ở repo **trung tâm nhất
+theo luồng người dùng** (thường là repo phục vụ/điều phối, không phải repo lưu trữ dữ liệu thô) — ghi lựa
+chọn này vào `docs/README.md` như mọi quyết định [OPT] khác.
+
+**KHÔNG dùng Discussions cho:** việc code được ngay (đi thẳng `agent-ready` Issue) · sự thật đã chốt
+(Glossary/ADR — Discussions không có ID bất biến, đừng trích dẫn nó như một nguồn sự thật lâu dài, xem
+L3) · một thread ngày càng dài không ai còn nhớ kết luận — nếu tới mức đó, tóm tắt thành comment ghim
+(pin) hoặc tách Issue, đừng để Discussion tự phình thành tài liệu thay thế ADR.
+
 ### Hai mẫu Issue đủ dùng
 - **`decision-needed`** → đầu vào của một ADR. Bắt buộc: bối cảnh · các phương án · thứ **KHÔNG** thuộc
   phạm vi quyết định này. Đóng khi ADR merge.
@@ -264,7 +317,7 @@ file tĩnh). **Chưa cần:** agent chỉ có quyền đọc/sửa file trong sa
 | GitHub | GitLab | Lưu ý |
 |---|---|---|
 | Pull Request | **Merge Request** | `Closes #NN` vẫn tự đóng Issue |
-| Discussions (độc lập) | **không có** | Dùng Issue gắn nhãn `discussion` |
+| Discussions (độc lập, xem § "GitHub Discussions" ở trên) | **không có** | Dùng Issue gắn nhãn `discussion`, đóng thủ công khi tốt nghiệp thành `decision-needed` |
 | Issue Forms (`.yml`, có trường cấu trúc) | `.gitlab/issue_templates/*.md` | Chỉ markdown — không có trường bắt buộc |
 | PR template | `.gitlab/merge_request_templates/*.md` | |
 | Actions | `.gitlab-ci.yml` | **Kiểm có runner trước** (Settings → CI/CD → Runners) |
