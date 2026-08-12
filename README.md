@@ -8,7 +8,7 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 | File/thư mục | Vai trò |
 |---|---|
 | `CLAUDE.md` | Phương pháp luận viết tài liệu — Glossary/ADR/quy mô S-M-L/kỷ luật số. **Auto-load** mỗi phiên Claude Code. |
-| `AGENT.md` | Quy tắc vận hành agent — ranh giới hành động, kỷ luật hạ tầng, **§6 tự-review bắt buộc trước khi báo "xong"**. `CLAUDE.md` §0.5 bắt agent đọc file này mỗi phiên. |
+| `AGENT.md` | Quy tắc vận hành agent — ranh giới hành động, kỷ luật hạ tầng, **§6 tự-review bắt buộc trước khi báo "xong"**, **§8 research web (học thuật + industry) TỰ ĐỘNG trước khi chốt phương án**. `CLAUDE.md` §0.5 bắt agent đọc file này mỗi phiên. |
 | `GIT-FLOW.md` | [OPT] Chi tiết đầy đủ mô hình Issue→worktree→PR→merge (chỉ đọc khi chọn O7-A ở `CLAUDE.md` §11). |
 | `templates/` | Copy-paste thẳng vào `docs/` project mới: `glossary.md` · `adr-log.md` · `context-map.md` · `README.md` (doc index) · `roadmap.md` · `HANDOFF.md` · `constitution.md` ([OPT]). |
 | `.github/ISSUE_TEMPLATE/` | `agent-ready.yml` (SPEC/PLAN) · `decision-needed.yml` — chỉ cần nếu dùng O7-A. |
