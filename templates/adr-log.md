@@ -19,11 +19,14 @@
 <Vì sao phải quyết BÂY GIỜ. Rủi ro 2 chiều nếu chọn sai.>
 
 ### Phương án đã xem xét
-| Phương án | Mô tả | Đánh giá |
-|---|---|---|
-| (a) … | … | **Chọn** — <lý do> |
-| (b) … | … | Loại — <lý do CỤ THỂ, dẫn bằng chứng, không phải "có vẻ tệ hơn"> |
-| (c) … | … | Loại (chưa tới lúc) — Trigger <điều kiện> |
+| Phương án | Mô tả | Đánh giá | Nguồn tham khảo ngoài [OPT] |
+|---|---|---|---|
+| (a) … | … | **Chọn** — <lý do> | <link, ngày tra cứu — nếu có tiền lệ ngành ủng hộ> |
+| (b) … | … | Loại — <lý do CỤ THỂ, dẫn bằng chứng, không phải "có vẻ tệ hơn"> | |
+| (c) … | … | Loại (chưa tới lúc) — Trigger <điều kiện> | |
+
+Cột cuối [OPT]: bỏ trống nếu quyết định thuần nội bộ. Cách research (khi nào bắt buộc, tối thiểu bao
+nhiêu nguồn độc lập) → `AGENT.md` §8.
 
 ### Quyết định
 <Chọn gì. Cơ chế hiện thực hoá nằm ở đâu (code/ADR khác).>

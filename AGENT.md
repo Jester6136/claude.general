@@ -12,7 +12,8 @@
 
 **Mục lục:** §1 ranh giới hành động · §2 trước khi đổi hạ tầng/bảo mật · §3 ghi issue — một nguồn sự
 thật · §4 test — CI tự kiểm vs cần hạ tầng sống · §5 commit/push · **§6 bằng chứng trước khi tuyên bố
-(tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A).
+(tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A) ·
+**§8 research web (học thuật + industry) — TỰ ĐỘNG trước khi chốt phương án/root-cause khó**.
 
 ---
 
@@ -138,3 +139,47 @@ repo) ở **`GIT-FLOW.md`** — không lặp lại ở đây (L2 SSOT). Tóm t�
 
 Nếu chưa chọn O7-A (đang dùng O7-B — sửa thẳng, ADR khi đảo quyết định): bỏ qua §7, dùng §3 (roadmap
 §TODO) làm nguồn việc-đang-mở.
+
+## 8. Research web (học thuật + industry) — TỰ ĐỘNG, không đợi được nhắc
+
+> **Nguồn:** phát hiện thật trong một phiên làm việc — agent root-cause một bug (confirm-pass gộp-nhầm
+> tài liệu, đo được `P=1.000 R=0.786`) bằng dữ liệu thật, mở Issue `decision-needed` liệt kê 4 phương án
+> THUẦN suy luận nội bộ. Owner phải tự nhắc "research web đi" agent mới tra cứu — và khi tra, 3 nguồn
+> độc lập (một benchmark ngành có SỐ ĐO, một sản phẩm production mã nguồn mở, một đề xuất OSS đang mở)
+> **đều** xác nhận đúng hình dạng lỗi đã đo (precision cao/recall thấp là lỗi hệ thống của cả ngành, không
+> phải hiện tượng riêng), ủng hộ trực tiếp 1 trong 4 phương án, và lộ ra thêm 1 phương án MỚI chưa từng
+> nghĩ tới (confidence-gated, đối xứng với cơ chế HITL-gộp đã có). Việc này lẽ ra phải là bước MẶC ĐỊNH,
+> không phải việc cần nhắc riêng mỗi lần.
+
+**Khi nào TỰ ĐỘNG research (không đợi owner nói "research đi"):**
+- Đang viết một Issue `decision-needed` (`GIT-FLOW.md` § "Hai mẫu Issue") — nghĩa là đang liệt kê phương
+  án chỉ từ suy luận nội bộ, chưa đối chiếu xem ai khác đã gặp/giải bài toán này chưa.
+- Root-cause một bug đã xác định THẬT (không suy đoán) nhưng cách sửa có ≥2 hướng hợp lý, không hướng
+  nào rõ ràng vượt trội chỉ từ logic nội bộ.
+- Sắp viết một ADR nền tảng (`CLAUDE.md` L1) cho một quyết định kiến trúc nhiều khả năng đã có tiền lệ
+  ngành (giao thức, thuật toán, pattern kiến trúc phổ biến) — đừng tái phát minh trong im lặng rồi mới
+  biết ngành đã có giải pháp/đã thử và thất bại.
+
+**Không cần khi:** bug có root-cause RÕ MỘT HƯỚNG SỬA DUY NHẤT (đây là "sửa lỗi", không phải "quyết
+định") · quyết định thuần nội bộ không có tương đương bên ngoài (vd đặt tên biến, cấu trúc thư mục nội
+bộ) · đã research đúng câu hỏi này trong phiên gần đây (đừng lặp vô ích, trích lại kết quả cũ).
+
+**Cách research đủ TIN CẬY để trích vào tài liệu (không phải lướt qua cho có):**
+1. Tối thiểu **2-3 nguồn ĐỘC LẬP** (khác tổ chức/tác giả) — một nguồn không đủ để kết luận "ngành làm
+   vậy". Ưu tiên theo thứ tự: benchmark/số đo thật > sản phẩm production đã mở mã nguồn > đề xuất/thảo
+   luận OSS đang hoạt động > blog cá nhân không kèm số liệu.
+2. **Đọc TOÀN VĂN trước khi trích** (`CLAUDE.md` §5.1 "Nguồn" — không ghi nguồn chưa đọc toàn văn) —
+   không suy diễn kết luận từ tiêu đề/đoạn trích công cụ tìm kiếm.
+3. **Đối chiếu với triệu chứng THẬT đã đo trên dữ liệu của MÌNH** trước khi áp kết luận ngành vào — số đo
+   ngành (vd "recall ~50%") là THAM CHIẾU xác nhận hình dạng lỗi giống nhau, KHÔNG phải cam kết sẽ đạt
+   cùng con số trên hạ tầng/dữ liệu riêng (đúng tinh thần `CLAUDE.md` §6.8 "root-cause trước khi chỉnh
+   tham số" — không suy đoán số ngoài áp thẳng vào số của mình).
+4. Ghi **ngày tra cứu** cạnh mỗi nguồn — trang web đổi nội dung hoặc biến mất, không bất biến như commit
+   SHA.
+
+**Ghi kết quả ở đâu (L2 SSOT — một nơi, không rải):**
+- Chưa đủ để chốt quyết định → **comment trên chính Issue `decision-needed`** (không viết file riêng) —
+  Issue vẫn là nguồn việc-đang-mở duy nhất.
+- Đã đủ để chốt → mục **"Nguồn tham khảo ngoài"** trong ADR khi merge (`CLAUDE.md` §5.3) — thêm dòng
+  link + ngày tra cứu ngay cạnh phương án được chọn/loại trong bảng "Phương án đã xem xét", không tách
+  thành mục riêng biệt khỏi lý do.

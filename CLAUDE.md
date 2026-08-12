@@ -247,11 +247,15 @@ lệch cả một story).
 <Vì sao phải quyết BÂY GIỜ. Rủi ro 2 chiều nếu chọn sai.>
 
 ### Phương án đã xem xét
-| Phương án | Mô tả | Đánh giá |
-|---|---|---|
-| (a) … | … | **Chọn** — <lý do> |
-| (b) … | … | Loại — <lý do CỤ THỂ, dẫn bằng chứng> |
-| (c) … | … | Loại (chưa tới lúc) — Trigger B |
+| Phương án | Mô tả | Đánh giá | Nguồn tham khảo ngoài [OPT] |
+|---|---|---|---|
+| (a) … | … | **Chọn** — <lý do> | <link, ngày tra cứu — nếu có tiền lệ ngành ủng hộ> |
+| (b) … | … | Loại — <lý do CỤ THỂ, dẫn bằng chứng> | |
+| (c) … | … | Loại (chưa tới lúc) — Trigger B | |
+
+Cột cuối [OPT]: bỏ trống nếu quyết định thuần nội bộ, không có tương đương bên ngoài. Có ≥1 nguồn thì
+đây LÀ nơi ghi (không tách mục riêng) — cách research (khi nào bắt buộc, tối thiểu bao nhiêu nguồn độc
+lập, không suy đoán số ngành áp thẳng vào số của mình) thuộc `AGENT.md` §8, không lặp lại ở đây (L2 SSOT).
 
 ### Quyết định
 <Chọn gì. Cơ chế hiện thực hoá nằm ở ADR nào.>

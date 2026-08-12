@@ -299,7 +299,9 @@ L3) · một thread ngày càng dài không ai còn nhớ kết luận — nếu
 
 ### Hai mẫu Issue đủ dùng
 - **`decision-needed`** → đầu vào của một ADR. Bắt buộc: bối cảnh · các phương án · thứ **KHÔNG** thuộc
-  phạm vi quyết định này. Đóng khi ADR merge.
+  phạm vi quyết định này. Đóng khi ADR merge. **Trước khi liệt kê phương án:** research web (học thuật +
+  industry) TỰ ĐỘNG, không đợi được nhắc — xem `AGENT.md` §8. Danh sách phương án chỉ từ suy luận nội
+  bộ, chưa đối chiếu tiền lệ ngành, là danh sách CHƯA ĐỦ để đưa cho owner quyết.
 - **`agent-ready`** (Story) → việc code được ngay. Tách **hai khối bên trong Issue**, vì độ bất biến khác
   nhau (áp dụng khi Issue đủ phức tạp để "cách làm" có thể sai dù "yêu cầu" đúng — Issue nhỏ giữ gộp
   như cũ):

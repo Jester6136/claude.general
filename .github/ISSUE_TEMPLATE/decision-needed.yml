@@ -17,6 +17,13 @@ body:
     validations:
       required: true
   - type: textarea
+    id: external_research
+    attributes:
+      label: "Research web (học thuật + industry) — nguồn + ngày tra cứu"
+      description: "AGENT.md §8: TỰ ĐỘNG trước khi liệt kê phương án ở trên, không đợi được nhắc. Tối thiểu 2-3 nguồn độc lập, đọc toàn văn trước khi trích. Để trống + ghi lý do nếu quyết định thuần nội bộ không có tiền lệ ngành."
+    validations:
+      required: false
+  - type: textarea
     id: out_of_scope
     attributes:
       label: "Thứ KHÔNG thuộc phạm vi quyết định này"
