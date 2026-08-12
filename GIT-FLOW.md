@@ -37,11 +37,12 @@ bằng PR/MR; và cái gật đầu cuối cùng vẫn là của con người, t
 flowchart TB
     subgraph H["👤 NGƯỜI — đóng nhiều vai, chỉ ở 3 điểm"]
         H1["Vai CHỦ SẢN PHẨM<br/>mở Issue / duyệt Issue agent tự mở"]
-        H2["Vai KIẾN TRÚC SƯ<br/>chốt quyết định → ADR"]
+        H2["Vai KIẾN TRÚC SƯ<br/>trao đổi ở Discussion → chốt quyết định → ADR"]
         H3["Vai NGƯỜI GÁC CỔNG<br/>đọc diff → bấm MERGE"]
     end
 
     subgraph G["🗃️ GIT — nơi công việc SỐNG (không phải nơi lưu trữ)"]
+        DISC["💬 Discussion<br/>khảo sát/câu hỏi mở<br/>CHƯA đóng khung phương án"]
         I["📋 Issue<br/><i>decision-needed</i> · <i>agent-ready</i><br/>= hàng đợi việc + ĐẶC TẢ"]
         B["🌿 Branch/worktree riêng<br/>mỗi Issue một nhánh"]
         P["🔀 PR/MR<br/>= báo cáo của agent, dạng DIFF"]
@@ -64,7 +65,10 @@ flowchart TB
         D5["constitution.md [OPT]<br/>luật hằng số, mọi phiên"]
     end
 
-    H1 -->|"giao việc"| I
+    H1 -->|"việc RÕ, giao thẳng"| I
+    H1 -.->|"còn mơ hồ/cần trao đổi"| DISC
+    H2 -->|"trao đổi hướng"| DISC
+    DISC -->|"đủ rõ để đóng khung → tốt nghiệp"| I
     H2 -->|"quyết định"| D2
     I -->|"nhận brief"| A1 --> A2 --> A3 --> A4
     A4 --> P
@@ -88,20 +92,24 @@ flowchart TB
     classDef agent fill:#bbf7d0,stroke:#15803d,color:#1c1917
     classDef doc fill:#e9d5ff,stroke:#7e22ce,color:#1c1917
     class H1,H2,H3 human
-    class I,B,P,C,M git
+    class DISC,I,B,P,C,M git
     class A1,A2,A3,A4 agent
     class D1,D2,D3,D4,D5 doc
 ```
 
-**Đọc sơ đồ này ra bốn ý:**
+**Đọc sơ đồ này ra năm ý:**
 1. **Người chỉ chạm 3 điểm** (mở việc · chốt quyết định · merge) — phần còn lại là agent + máy. Đó là
    cách một người đóng được nhiều vai mà không vỡ.
 2. **Issue là ĐẶC TẢ, không phải lời nhắc.** Đây là lợi ích lớn nhất khi làm với AI: viết Issue buộc
    người phải chốt phạm vi **trước khi** agent bắt đầu; agent nhận một brief tự chứa; mục "KHÔNG được
    đụng vào" giới hạn bán kính thiệt hại.
-3. **Mũi tên `MƠ HỒ → DỪNG, hỏi ở Issue`** là thứ giữ cho mô hình không trôi: agent gặp chỗ chưa rõ thì
+3. **Discussion là bước LỌC trước Issue, không phải bước bắt buộc.** Việc đã rõ thì H1 giao thẳng vào
+   Issue (mũi tên liền); việc còn cần bàn thì đi qua Discussion trước, "tốt nghiệp" thành Issue
+   `decision-needed` khi đã đủ khung phương án (mũi tên đứt → Discussion → Issue). Agent KHÔNG tham gia
+   nhánh Discussion — đó là hội thoại thuần người, xem § "GitHub Discussions" ở trên.
+4. **Mũi tên `MƠ HỒ → DỪNG, hỏi ở Issue`** là thứ giữ cho mô hình không trôi: agent gặp chỗ chưa rõ thì
    quay lại Issue, không tự quyết. Không có mũi tên này thì Issue chỉ là hình thức.
-4. **Docs không nằm trong vòng lặp thực thi — chúng là thứ vòng lặp ĐỌC và GHI vào.** Agent đọc
+5. **Docs không nằm trong vòng lặp thực thi — chúng là thứ vòng lặp ĐỌC và GHI vào.** Agent đọc
    Glossary/ADR để hiểu đúng nghĩa; merge ghi ngược lại trạng thái + bài học.
 
 ### `constitution.md` — [OPT] tầng luật riêng cho agent, tách khỏi ADR Log
@@ -122,6 +130,9 @@ dấu hiệu luật đó thuộc về mọi phiên, không thuộc về một qu
 
 Điểm tinh tế: người **không ngồi canh** agent. Nền tảng git đã có sẵn cơ chế báo; việc cần làm là bố trí
 để nó chỉ kêu ở đúng 4 thời điểm — nhiều hơn thì bị nhiễu, ít hơn thì mất kiểm soát.
+
+*Phạm vi sơ đồ dưới đây bắt đầu từ Issue `agent-ready` đã sẵn sàng — KHÔNG bao gồm giai đoạn Discussion
+(hội thoại thuần người, chưa có agent, không có sự kiện CI nào để báo — xem sơ đồ tổng ở trên).*
 
 ```mermaid
 sequenceDiagram
