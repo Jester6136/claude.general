@@ -135,6 +135,11 @@ repo) ở **`GIT-FLOW.md`** — không lặp lại ở đây (L2 SSOT). Tóm t�
 4. `./scripts/check.sh --all` — ĐỎ thì tự sửa, đừng mở PR.
 5. Chạy §6 (checklist bằng chứng) trước khi mở PR.
 6. Mở PR, `Closes #NN`, một commit gói trọn một việc.
+6b. **Được cấp quyền tự merge PR đó ⇒ BẮT BUỘC chạy skill `code-review` (`/code-review`) trên PR
+    trước, xử lý xong finding tin cậy cao rồi mới `gh pr merge`** — không tự merge thẳng chỉ vì
+    `check.sh --all` xanh (cổng máy khác review nội dung: `code-review` còn soi tuân thủ CLAUDE.md,
+    bug lộ qua đọc diff, ngữ cảnh git-blame/PR cũ). Không có quyền merge (người tự bấm merge) thì bỏ
+    qua bước này — người merge tự quyết cách review.
 7. Sau merge: cập nhật `HANDOFF.md` + đóng Issue + dọn worktree, cùng commit với code.
 
 Nếu chưa chọn O7-A (đang dùng O7-B — sửa thẳng, ADR khi đảo quyết định): bỏ qua §7, dùng §3 (roadmap
