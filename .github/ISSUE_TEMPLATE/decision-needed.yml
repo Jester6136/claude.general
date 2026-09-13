@@ -2,6 +2,13 @@ name: "decision-needed — đầu vào của một ADR"
 description: "Quyết định kiến trúc/hướng đi chưa chốt. Đóng khi ADR merge vào adr-log.md."
 labels: ["decision-needed"]
 body:
+  - type: input
+    id: discussion_link
+    attributes:
+      label: "Discussion gốc (nếu Issue này tốt nghiệp từ một Discussion)"
+      description: "Link, không copy nội dung (GIT-FLOW.md § 'GitHub Discussions', L2 SSOT). Để trống nếu việc đã đủ rõ để giao thẳng Issue, không qua Discussion."
+    validations:
+      required: false
   - type: textarea
     id: context
     attributes:

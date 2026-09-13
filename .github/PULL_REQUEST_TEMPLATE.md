@@ -1,5 +1,8 @@
 <!-- Xem AGENT.md §7 / GIT-FLOW.md trước khi mở PR. Chạy AGENT.md §6 (checklist bằng chứng) trước khi
-     điền form này — đừng viết "đã xong" nếu chưa thực sự chạy lại verify trong phiên hiện tại. -->
+     điền form này — đừng viết "đã xong" nếu chưa thực sự chạy lại verify trong phiên hiện tại.
+     BẮT BUỘC trước merge (GIT-FLOW.md §11b "Năm cổng" — G4): chạy /code-review trên diff này, CI xanh
+     KHÔNG đủ. Sau đó: chủ dự án tự merge, hoặc trao quyền cho Agent merge — trao quyền không phải mặc
+     định. -->
 
 Closes #<NN>
 <!-- Chạm >1 repo? Đóng Issue ở repo khác: Closes owner/repo#N (GIT-FLOW.md §11c) -->

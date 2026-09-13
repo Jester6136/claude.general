@@ -35,18 +35,23 @@ bằng PR/MR; và cái gật đầu cuối cùng vẫn là của con người, t
 
 ```mermaid
 flowchart TB
-    subgraph H["👤 NGƯỜI — đóng nhiều vai, chỉ ở 3 điểm"]
+    subgraph S["🧑‍🤝‍🧑 THAM GIA DISCUSSION<br/>TechLead · Dev · BA"]
+        S1["làm rõ phạm vi – quy mô – nghiệp vụ<br/>+ research cách thức"]
+    end
+
+    subgraph H["👤 NGƯỜI (chủ dự án) — đóng nhiều vai, chỉ ở 3 điểm"]
         H1["Vai CHỦ SẢN PHẨM<br/>mở Issue / duyệt Issue agent tự mở"]
-        H2["Vai KIẾN TRÚC SƯ<br/>trao đổi ở Discussion → chốt quyết định → ADR"]
-        H3["Vai NGƯỜI GÁC CỔNG<br/>đọc diff → bấm MERGE"]
+        H2["Vai KIẾN TRÚC SƯ<br/>chủ trì Discussion → chốt quyết định → ADR"]
+        H3["Vai NGƯỜI GÁC CỔNG<br/>chạy skill code-review → tự merge HOẶC trao quyền Agent merge"]
     end
 
     subgraph G["🗃️ GIT — nơi công việc SỐNG (không phải nơi lưu trữ)"]
         DISC["💬 Discussion<br/>khảo sát/câu hỏi mở<br/>CHƯA đóng khung phương án"]
-        I["📋 Issue<br/><i>decision-needed</i> · <i>agent-ready</i><br/>= hàng đợi việc + ĐẶC TẢ"]
+        I["📋 Issue<br/>BẮT BUỘC nhãn <i>agent-ready</i> hoặc <i>decision-needed</i><br/>= hàng đợi việc + ĐẶC TẢ"]
         B["🌿 Branch/worktree riêng<br/>mỗi Issue một nhánh"]
         P["🔀 PR/MR<br/>= báo cáo của agent, dạng DIFF"]
         C{"🤖 CI<br/>make check"}
+        RV{"🔎 skill code-review<br/>BẮT BUỘC trước merge"}
         M["✅ Merge<br/>= CHẤP NHẬN chính thức"]
     end
 
@@ -55,6 +60,7 @@ flowchart TB
         A2["overlap scan<br/>đã có ai làm việc này chưa"]
         A3["code + tự chạy cổng"]
         A4["mở PR/MR<br/>kèm Closes #NN"]
+        A5["merge<br/>CHỈ khi được H3 trao quyền"]
     end
 
     subgraph D["📚 DOCS — tri thức BỀN, sống trong repo"]
@@ -67,7 +73,8 @@ flowchart TB
 
     H1 -->|"việc RÕ, giao thẳng"| I
     H1 -.->|"còn mơ hồ/cần trao đổi"| DISC
-    H2 -->|"trao đổi hướng"| DISC
+    H2 -->|"chủ trì"| DISC
+    S1 -->|"trao đổi cùng"| DISC
     DISC -->|"đủ rõ để đóng khung → tốt nghiệp"| I
     H2 -->|"quyết định"| D2
     I -->|"nhận brief"| A1 --> A2 --> A3 --> A4
@@ -79,8 +86,12 @@ flowchart TB
     A1 -.->|"đọc luật hằng số trước khi nhận việc"| D5
     P --> C
     C -->|"ĐỎ → agent tự sửa, quay lại"| A3
-    C -->|"XANH"| H3
-    H3 -->|"đọc diff"| M
+    C -->|"XANH"| RV
+    RV -->|"có finding chặn → agent tự sửa"| A3
+    RV -->|"sạch"| H3
+    H3 -->|"tự merge"| M
+    H3 -.->|"trao quyền"| A5
+    A5 --> M
     M -->|"Closes #NN → tự đóng"| I
     M -->|"cập nhật trạng thái"| D4
     M -->|"bài học đáng nhớ"| D2
@@ -91,26 +102,30 @@ flowchart TB
     classDef git fill:#bfdbfe,stroke:#1d4ed8,color:#1c1917
     classDef agent fill:#bbf7d0,stroke:#15803d,color:#1c1917
     classDef doc fill:#e9d5ff,stroke:#7e22ce,color:#1c1917
+    classDef stakeholder fill:#fecaca,stroke:#b91c1c,color:#1c1917
     class H1,H2,H3 human
-    class DISC,I,B,P,C,M git
-    class A1,A2,A3,A4 agent
+    class DISC,I,B,P,C,RV,M git
+    class A1,A2,A3,A4,A5 agent
     class D1,D2,D3,D4,D5 doc
+    class S1 stakeholder
 ```
 
-**Đọc sơ đồ này ra năm ý:**
-1. **Người chỉ chạm 3 điểm** (mở việc · chốt quyết định · merge) — phần còn lại là agent + máy. Đó là
-   cách một người đóng được nhiều vai mà không vỡ.
-2. **Issue là ĐẶC TẢ, không phải lời nhắc.** Đây là lợi ích lớn nhất khi làm với AI: viết Issue buộc
-   người phải chốt phạm vi **trước khi** agent bắt đầu; agent nhận một brief tự chứa; mục "KHÔNG được
-   đụng vào" giới hạn bán kính thiệt hại.
-3. **Discussion là bước LỌC trước Issue, không phải bước bắt buộc.** Việc đã rõ thì H1 giao thẳng vào
-   Issue (mũi tên liền); việc còn cần bàn thì đi qua Discussion trước, "tốt nghiệp" thành Issue
-   `decision-needed` khi đã đủ khung phương án (mũi tên đứt → Discussion → Issue). Agent KHÔNG tham gia
-   nhánh Discussion — đó là hội thoại thuần người, xem § "GitHub Discussions" ở trên.
+**Đọc sơ đồ này ra sáu ý:**
+1. **Người (chủ dự án) chỉ chạm 3 điểm** (mở việc · chốt quyết định · merge) — phần còn lại là agent +
+   máy. Đó là cách một người đóng được nhiều vai mà không vỡ.
+2. **Issue là ĐẶC TẢ, không phải lời nhắc.** Viết Issue buộc người phải chốt phạm vi **trước khi** agent
+   bắt đầu; agent nhận một brief tự chứa; mục "KHÔNG được đụng vào" giới hạn bán kính thiệt hại. Nhãn
+   `agent-ready`/`decision-needed` là bắt buộc, không tuỳ chọn — chi tiết ở § "Hai mẫu Issue" dưới đây.
+3. **TechLead, Dev, BA tham gia Discussion trực tiếp**, không phải một mình chủ dự án — chi tiết vai trò
+   và mục đích ở § "GitHub Discussions" dưới đây. Việc đã rõ thì H1 giao thẳng vào Issue (mũi tên liền);
+   việc còn cần bàn thì qua Discussion trước, "tốt nghiệp" thành Issue `decision-needed` khi đủ khung
+   phương án (mũi tên đứt). Agent không tham gia nhánh này.
 4. **Mũi tên `MƠ HỒ → DỪNG, hỏi ở Issue`** là thứ giữ cho mô hình không trôi: agent gặp chỗ chưa rõ thì
    quay lại Issue, không tự quyết. Không có mũi tên này thì Issue chỉ là hình thức.
 5. **Docs không nằm trong vòng lặp thực thi — chúng là thứ vòng lặp ĐỌC và GHI vào.** Agent đọc
    Glossary/ADR để hiểu đúng nghĩa; merge ghi ngược lại trạng thái + bài học.
+6. **CI xanh KHÔNG đủ để merge — còn phải qua skill `code-review` (G4)**, rồi H3 mới chọn tự merge hay
+   trao quyền Agent merge (A5) — chi tiết ở § "Năm cổng" dưới đây.
 
 ### `constitution.md` — [OPT] tầng luật riêng cho agent, tách khỏi ADR Log
 
@@ -141,6 +156,7 @@ sequenceDiagram
     participant G as 🗃️ Git (Issue/MR)
     participant A as 🤖 Agent
     participant C as ⚙️ CI
+    participant R as 🔎 skill code-review
 
     N->>G: mở Issue `agent-ready`
     G-->>A: giao việc (brief tự chứa)
@@ -150,8 +166,16 @@ sequenceDiagram
     C-->>A: ĐỎ → agent tự sửa, đẩy lại
     Note over A,C: vòng này KHÔNG làm phiền người
     C-->>G: XANH
+    N->>R: chạy /code-review (BẮT BUỘC trước merge)
+    R-->>A: có finding chặn → agent tự sửa, đẩy lại
+    R-->>N: sạch → sẵn sàng merge
     G-->>N: 🔔 (1) "MR sẵn sàng review"
-    N->>G: đọc diff → merge
+    alt tự merge
+        N->>G: đọc diff → merge
+    else trao quyền cho Agent
+        N-->>A: trao quyền merge (quyết định của người, mỗi lần hoặc theo constitution.md)
+        A->>G: merge
+    end
     G-->>N: 🔔 (2) Issue tự đóng
 
     A--)G: gặp chỗ MƠ HỒ → comment/gán nhãn
@@ -162,10 +186,13 @@ sequenceDiagram
 
 | # | Đánh thức khi | Vì sao đáng làm phiền |
 |---|---|---|
-| 1 | MR xanh, chờ merge | Đây là điểm người phải quyết — không ai thay được |
+| 1 | `code-review` sạch, chờ merge | Đây là điểm người phải quyết (tự merge hay trao quyền) — không ai thay được |
 | 2 | Issue tự đóng | Xác nhận vòng đã khép, không cần theo dõi tay |
 | 3 | **Agent bị chặn / gặp chỗ mơ hồ** | Quan trọng nhất: thà bị đánh thức còn hơn để agent tự suy diễn |
 | 4 | Pipeline nhánh chính đỏ | Hỏng thứ đang chạy — khẩn |
+
+★ Thông báo (1) chỉ nổ khi cả CI lẫn `code-review` đều sạch — báo sớm hơn là gọi người tới xem một MR
+còn finding chưa xử lý, đúng thứ 4-thời-điểm này cố tránh.
 
 ★ **KHÔNG** báo khi: agent đang code · CI đỏ ở nhánh feature (agent tự sửa) · mỗi commit. Báo mọi thứ =
 người tắt thông báo = mất luôn cả 4 cái quan trọng.
@@ -232,23 +259,36 @@ cho nhánh agent (vd bắt buộc CI xanh, cấm force-push) khác với nhánh 
 không — phe cho rằng ai commit thì người đó chịu trách nhiệm, không cần nhãn theo dòng. Quy ước **theo
 nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy trình (branch/PR), không nằm ở cấp dòng code.
 
-### Bốn cổng, theo thứ tự tăng dần chi phí
+### Năm cổng, theo thứ tự tăng dần chi phí
 
 | Cổng | Nội dung | Chi phí | Đáng làm khi |
 |---|---|---|---|
 | G1 **`make check`** | lint · typecheck · **import-linter** · test/smoke, gom một lệnh | thấp | luôn luôn |
 | G2 **CI chạy G1** | mỗi push/MR | thấp (nếu có runner) | luôn luôn |
 | G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | trung bình | sau khi G2 ổn định |
-| G4 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | cao | **[TRIGGER]** ≥2 người thật |
+| G4 **skill `code-review`** | người (hoặc agent, nếu được trao quyền merge) chạy `/code-review` trên diff, **BẮT BUỘC trước khi merge** — bất kể ai bấm merge | thấp (vài phút, một lệnh) | luôn luôn — điều kiện merge, không phải trigger theo số người |
+| G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | cao | **[TRIGGER]** ≥2 người thật |
 
-★ Một mình thì G4 là **tự-review**, không phải review độc lập — giữ *checklist* (nó bắt được lỗi thật,
-kể cả lỗi tự mâu thuẫn trong header tài liệu), nhưng đừng gọi tên sai bản chất.
+★ Một mình thì G5 là **tự-review**, không phải review độc lập — giữ *checklist* (nó bắt được lỗi thật,
+kể cả lỗi tự mâu thuẫn trong header tài liệu), nhưng đừng gọi tên sai bản chất. **G4 không thay thế G5:**
+G4 chạy được ngay cả một mình; G5 cần một con người KHÁC — hai cổng độc lập, không cổng nào miễn trừ
+cổng kia.
+
+**Sau khi G4 sạch, người gác cổng (H3) chọn một trong hai — cả hai đều yêu cầu G4 đã chạy, không có
+đường tắt:** tự merge (đọc diff, bấm như bình thường), hoặc **trao quyền cho Agent merge** (A5 ở sơ đồ
+trên) — cấp từng lần hoặc một lần cho cả loại Issue, ghi ở `constitution.md` § "Trao quyền merge cho
+Agent".
 
 ### [OPT] GitHub Discussions — trước khi thành Issue
 
 Khoảng trống trước đây trong file này: "Discussion" xuất hiện ở đầu chuỗi O7-A
 (`Discussion → Issue → PR/MR → merge=Approved`, `CLAUDE.md` §11) nhưng chưa có nơi nào nói **Discussions
 là gì cụ thể trên GitHub, khi nào dùng, và ai đọc**. Mục này bù chỗ đó.
+
+**Đối tượng tham gia:** TechLead, Dev, BA join trực tiếp vào thread — không phải một mình chủ dự án tự
+hỏi tự trả lời. **Mục đích:** làm rõ phạm vi – quy mô – nghiệp vụ, và research cách thức, trước khi đóng
+khung thành phương án. Mời đúng vai theo câu hỏi: TechLead (kiến trúc/khả thi kỹ thuật), BA (nghiệp
+vụ/phạm vi), Dev (chi phí hiện thực hoá) — thiếu một vai dễ ra quyết định lệch góc nhìn.
 
 **Vì sao KHÔNG dùng thẳng Issue cho mọi thứ:** một `decision-needed` Issue (§ "Hai mẫu Issue" dưới đây)
 giả định bối cảnh đã đủ gọn để đóng khung thành phương án + quyết định — đúng hình dạng một ADR nháp.
@@ -298,6 +338,12 @@ L3) · một thread ngày càng dài không ai còn nhớ kết luận — nếu
 (pin) hoặc tách Issue, đừng để Discussion tự phình thành tài liệu thay thế ADR.
 
 ### Hai mẫu Issue đủ dùng
+
+**Bắt buộc, không tuỳ chọn:** mọi Issue mang ít nhất một trong hai nhãn dưới đây — không nhãn thì không
+phải hàng đợi việc hợp lệ. Tạo qua `.github/ISSUE_TEMPLATE/{agent-ready,decision-needed}.yml` thì tự gắn
+sẵn; tạo tay (`gh issue create` không qua template, hoặc import/retroactive) phải gắn ngay lúc tạo
+(`gh issue edit <N> --add-label agent-ready`), không để trống rồi tính sau.
+
 - **`decision-needed`** → đầu vào của một ADR. Bắt buộc: bối cảnh · các phương án · thứ **KHÔNG** thuộc
   phạm vi quyết định này. Đóng khi ADR merge. **Trước khi liệt kê phương án:** research web (học thuật +
   industry) TỰ ĐỘNG, không đợi được nhắc — xem `AGENT.md` §8. Danh sách phương án chỉ từ suy luận nội

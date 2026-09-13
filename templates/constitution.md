@@ -19,3 +19,10 @@ ngược một luật đã có ở đây.
 ```bash
 <lệnh — thường là ./scripts/check.sh --all>
 ```
+
+## Trao quyền merge cho Agent [OPT]
+Mặc định: KHÔNG cấp — chủ dự án tự merge sau khi `code-review` sạch (`GIT-FLOW.md` §11b, G4). Nếu cấp,
+ghi rõ phạm vi ở đây (loại Issue nào) để khỏi phải hỏi lại bằng lời mỗi lần:
+<vd: "Agent được tự merge Issue nhãn `agent-ready` sau khi code-review sạch VÀ CI xanh; Issue
+`decision-needed`/liên quan >1 repo luôn cần chủ dự án tự bấm merge.">
+
