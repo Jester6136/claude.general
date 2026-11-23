@@ -85,28 +85,40 @@ run_tests() {
 # Mỗi đơn vị = một file acceptance/<issue-id>-<slug>.sh. Exit 0 = ĐẠT · 77 = không chạy được (thiếu dữ
 # liệu/hạ tầng) · khác = KHÔNG ĐẠT. KHÁC các bước trên: SKIP (77) tính là ĐỎ — một đơn vị nghiệm thu đã
 # khai mà không chạy được thì chưa nghiệm thu. Mỗi đơn vị chạy 2 lần; exit code lệch = FLAKY = ĐỎ (không
-# tất định thì không được làm phán quyết). Không có đơn vị nào = 0 đơn vị (không phải lỗi).
+# tất định thì không được làm phán quyết; 2 lần chỉ bắt lệch THÔ, không chứng minh tất định).
+# Không có đơn vị nào = SKIP (hiện cảnh báo, không đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
+# ACCEPTANCE_REQUIRED_IDS="42 43" (CI lấy từ `Closes #N` của PR) ⇒ thiếu acceptance/<N>-*.sh = ĐỎ: việc
+# đóng Issue mà không khai đơn vị nghiệm thu thì không được xanh (ép bằng máy, CLAUDE.md L7).
 # N2: đơn vị chỉ CHẤM LẠI snapshot đã đóng băng — KHÔNG gọi model sống ở đây (đó là tầng B).
+verdict_of() { case "$1" in 0) echo ĐẠT ;; 77) echo KHÔNG-CHẠY ;; *) echo KHÔNG-ĐẠT ;; esac; }
 run_acceptance() {
   echo
   echo "Nghiệm thu tất định (acceptance/*.sh, mỗi đơn vị chạy 2 lần)"
-  local dir="${ACCEPTANCE_DIR:-acceptance}" unit rc1 rc2 n=0
+  local dir="${ACCEPTANCE_DIR:-acceptance}" unit rc1 rc2 v1 v2 id n=0
+  for id in ${ACCEPTANCE_REQUIRED_IDS:-}; do
+    if compgen -G "$dir/$id-*.sh" >/dev/null; then
+      pass "Issue #$id có đơn vị nghiệm thu"
+    else
+      fail "Issue #$id được đóng nhưng KHÔNG có $dir/$id-*.sh — khai đơn vị nghiệm thu trước khi merge"
+    fi
+  done
   for unit in "$dir"/*.sh; do
     [ -e "$unit" ] || continue
     n=$((n+1))
     rc1=0; bash "$unit" >/dev/null 2>&1 || rc1=$?
     rc2=0; bash "$unit" >/dev/null 2>&1 || rc2=$?
-    if [ "$rc1" -ne "$rc2" ]; then
-      fail "$unit — FLAKY: lần 1 exit=$rc1, lần 2 exit=$rc2 (cách ly + mở Issue, KHÔNG retry cho xanh)"
-    elif [ "$rc1" -eq 77 ]; then
+    v1=$(verdict_of "$rc1"); v2=$(verdict_of "$rc2")
+    if [ "$v1" != "$v2" ]; then
+      fail "$unit — FLAKY: lần 1 $v1 (exit=$rc1), lần 2 $v2 (exit=$rc2) — cách ly + mở Issue, KHÔNG retry cho xanh"
+    elif [ "$v1" = KHÔNG-CHẠY ]; then
       fail "$unit — không chạy được (exit 77): đơn vị đã khai mà không chạy = CHƯA nghiệm thu"
-    elif [ "$rc1" -eq 0 ]; then
+    elif [ "$v1" = ĐẠT ]; then
       pass "$unit"
     else
       fail "$unit — KHÔNG ĐẠT (exit=$rc1). Chạy tay để xem chi tiết: bash $unit"
     fi
   done
-  [ "$n" -eq 0 ] && echo "  · 0 đơn vị nghiệm thu trong $dir/ — việc đóng từ nay phải thêm đơn vị của nó"
+  [ "$n" -eq 0 ] && skip "0 đơn vị nghiệm thu trong $dir/ — CHƯA nghiệm thu gì; việc đóng từ nay phải thêm đơn vị của nó"
   return 0
 }
 

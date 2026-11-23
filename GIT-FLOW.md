@@ -93,7 +93,7 @@ flowchart TB
     C -->|"ĐỎ → agent tự sửa, quay lại"| A3
     C -->|"XANH"| RV
     RV -->|"finding"| A6
-    A6 -->|"thành test → chạy lại cổng"| C
+    A6 -->|"thành test → chạy lại cổng<br/>review lại CHỈ phần delta"| C
     A6 -->|"mọi finding đã xử lý"| H3
     H3 -->|"tự merge"| M
     H3 -.->|"trao quyền"| A5
@@ -284,6 +284,8 @@ hai bộ finding khác nhau ⇒ "PR này đạt chưa?" phụ thuộc vào lần
 cấm. Chuyển finding thành test giữ được giá trị phát hiện của G4 mà phán quyết vẫn tất định, và lần sau
 test đó còn chặn hồi quy — finding chỉ nói một lần, test nói mãi. Finding không thể thành test (vd đặt
 tên, độ rõ ràng) → bác bỏ hoặc sửa, kèm một dòng lý do; người gác cổng duyệt các dòng bác bỏ đó.
+**Điểm dừng:** sau khi sửa finding, review lại **chỉ phần delta** (commit thêm kể từ lần review trước) —
+chạy lại toàn diff thì một bộ chấm không tất định sẽ sinh finding mới mãi, PR không bao giờ tới H3.
 
 ★ Một mình thì G5 là **tự-review**, không phải review độc lập — đừng gọi tên sai bản chất. G4 không thay
 thế G5 và ngược lại.

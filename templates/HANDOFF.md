@@ -6,7 +6,7 @@
 ## 1. Vừa xong
 <1-3 gạch đầu dòng, mỗi dòng có bằng chứng verify thật — không phải "đã sửa xong".>
 
-## 2. ĐANG DỞ (việc kế tiếp ngay)
+## 2. ĐANG DỞ (việc kế tiếp ngay + thứ đã kiểm sẵn)
 <Việc kế tiếp cụ thể + những gì ĐÃ KIỂM SẴN (danh sách bất biến đã grep, cấu trúc đã soi) — phiên sau
 không phải làm lại từ đầu.>
 

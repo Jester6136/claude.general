@@ -98,14 +98,16 @@ giữa các lần chạy KHÔNG làm phán quyết dao động theo — phán qu
 
 **Flaky = loại khỏi cổng ngay.** Một đơn vị cho kết quả khác nhau trên CÙNG commit không phải đơn vị
 nghiệm thu: cách ly (quarantine) + mở Issue sửa, KHÔNG retry-cho-tới-khi-xanh. `check.sh --acceptance`
-tự chạy mỗi đơn vị 2 lần và đỏ nếu lệch (§4.2).
+chạy mỗi đơn vị 2 lần và đỏ nếu PHÁN QUYẾT lệch (§4.2) — chỉ bắt được lệch thô, KHÔNG chứng minh tất
+định. Tất định phải đến từ thiết kế (fake, replay, snapshot, seed cố định), không từ việc chạy lại.
 
 ### 4.2 Hiện thực bằng máy
 
 Mỗi đơn vị nghiệm thu là một file chạy được `acceptance/<issue-id>-<slug>.sh` (exit 0 = ĐẠT; exit 77 =
 không chạy được, **tính là ĐỎ**; khác = KHÔNG ĐẠT). `./scripts/check.sh --acceptance` chạy tất cả, mỗi cái
-2 lần. Thư mục chưa có đơn vị nào = 0 đơn vị, không phải lỗi — nhưng mọi việc đóng sau ngày áp quy tắc
-này phải thêm đơn vị của nó.
+2 lần. Thư mục chưa có đơn vị nào = SKIP (cảnh báo, chưa đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
+**Ép bằng máy:** CI đọc `Closes/Fixes/Resolves #N` trong PR → `ACCEPTANCE_REQUIRED_IDS` → thiếu
+`acceptance/<N>-*.sh` = ĐỎ. Ở O7-B (không có PR), luật này chỉ là kỷ luật — tự kiểm ở §6.
 
 ### 4.3 Tầng chạy: A (CI) vs B (hạ tầng sống)
 
@@ -181,9 +183,14 @@ chỉ là checklist thao tác:
 4. `./scripts/check.sh --all && ./scripts/check.sh --acceptance` — ĐỎ thì tự sửa, đừng mở PR.
 5. Chạy §6 → mở PR (`Closes #NN`, điền "Phán quyết nghiệm thu").
 6. `/code-review` trên diff — BẮT BUỘC trước MỌI merge, ai bấm cũng vậy (chốt 2026-09-13). Mỗi finding
-   → **thành test tất định** (quay lại bước 4) hoặc **bác bỏ kèm lý do** trong PR. Không finding nào để
-   trống.
-7. Merge — người bấm, hoặc agent **CHỈ khi** được trao quyền (`constitution.md`). Sau merge: `HANDOFF.md`.
+   → **sửa/thành test tất định** (quay lại bước 4) hoặc **bác bỏ kèm lý do** trong PR. Không finding nào
+   để trống. **Điểm dừng:** lần review sau chỉ chạy trên **phần diff thêm vào kể từ lần trước** (các commit
+   sửa finding), không chạy lại toàn diff — review không tất định, chạy lại toàn bộ thì finding mới sinh
+   mãi. Lượt delta sạch hoặc mọi finding của nó đã xử lý ⇒ xong.
+7. Merge — người bấm, hoặc agent **CHỈ khi** được trao quyền (`constitution.md`).
+8. Sau merge, cùng lượt: đóng Issue (nếu `Closes` không tự đóng, vd liên-repo) · `git worktree remove
+   .worktrees/<slug>` + xoá nhánh `agent/*` (để `git branch --list 'agent/*'` vẫn đúng là "đang làm") ·
+   cập nhật `HANDOFF.md`.
 
 Nếu chưa chọn O7-A (đang dùng O7-B — sửa thẳng, ADR khi đảo quyết định): bỏ qua §7, dùng §3 (roadmap
 §TODO) làm nguồn việc-đang-mở.
@@ -228,6 +235,6 @@ bộ) · đã research đúng câu hỏi này trong phiên gần đây (đừng 
 **Ghi kết quả ở đâu (L2 SSOT — một nơi, không rải):**
 - Chưa đủ để chốt quyết định → **comment trên chính Issue `decision-needed`** (không viết file riêng) —
   Issue vẫn là nguồn việc-đang-mở duy nhất.
-- Đã đủ để chốt → mục **"Nguồn tham khảo ngoài"** trong ADR khi merge (`CLAUDE.md` §5.3) — thêm dòng
+- Đã đủ để chốt → mục **"Nguồn tham khảo ngoài"** trong ADR khi merge (`templates/adr-log.md`) — thêm dòng
   link + ngày tra cứu ngay cạnh phương án được chọn/loại trong bảng "Phương án đã xem xét", không tách
   thành mục riêng biệt khỏi lý do.

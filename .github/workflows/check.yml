@@ -39,5 +39,16 @@ jobs:
 
       # Phán quyết nghiệm thu TẤT ĐỊNH (AGENT.md §4): N0 · N1 replay · chấm lại snapshot N2. Skip = ĐỎ,
       # flaky = ĐỎ. Không bao giờ gọi model sống ở đây — sinh snapshot/record cassette là tầng B.
+      # !cancelled(): vẫn chạy khi --all đỏ — phán quyết nghiệm thu luôn phải hiện, không bị che bởi lint.
+      # Issue mà PR đóng (Closes/Fixes/Resolves #N) ⇒ bắt buộc có acceptance/<N>-*.sh. Body PR đi qua env,
+      # KHÔNG nội suy ${{ }} thẳng vào script (tránh injection từ nội dung PR).
       - name: check.sh --acceptance (nghiệm thu tất định)
-        run: ./scripts/check.sh --acceptance
+        if: ${{ !cancelled() }}
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          ACCEPTANCE_REQUIRED_IDS="$(printf '%s' "${PR_BODY:-}" \
+            | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?) +#[0-9]+' | grep -oE '[0-9]+' | sort -u | tr '\n' ' ' || true)"
+          export ACCEPTANCE_REQUIRED_IDS
+          echo "Issue cần đơn vị nghiệm thu: ${ACCEPTANCE_REQUIRED_IDS:-(không có)}"
+          ./scripts/check.sh --acceptance

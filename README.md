@@ -46,7 +46,7 @@ cd <repo-mới> && ./scripts/install-hooks.sh
 
 - `CLAUDE.md` = **VÌ SAO viết tài liệu thế nào** — phương pháp luận, không phụ thuộc project cụ thể.
 - `AGENT.md` = **agent được/không được làm gì** — vận hành, ranh giới, bằng chứng-trước-khi-tuyên-bố.
-- `GIT-FLOW.md` = **[OPT]** chi tiết mô hình git-as-task-tracker — tách riêng vì nó dài (~550 dòng) và
+- `GIT-FLOW.md` = **[OPT]** chi tiết mô hình git-as-task-tracker — tách riêng vì nó là phần dài nhất và
   chỉ cần khi đã chọn phương án đó; không phải mọi project cần tải nó mỗi phiên.
 - `AI-PIPELINE.md` = **[OPT]** audit độ tin cậy cho pipeline AI — chỉ project có pipeline AI nhiều tầng
   mới cần.
