@@ -36,3 +36,8 @@ jobs:
 
       - name: check.sh --all (static + smoke thuần + test plumbing)
         run: ./scripts/check.sh --all
+
+      # Phán quyết nghiệm thu TẤT ĐỊNH (AGENT.md §4): N0 · N1 replay · chấm lại snapshot N2. Skip = ĐỎ,
+      # flaky = ĐỎ. Không bao giờ gọi model sống ở đây — sinh snapshot/record cassette là tầng B.
+      - name: check.sh --acceptance (nghiệm thu tất định)
+        run: ./scripts/check.sh --acceptance

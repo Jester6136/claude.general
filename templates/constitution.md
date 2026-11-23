@@ -21,8 +21,8 @@ ngược một luật đã có ở đây.
 ```
 
 ## Trao quyền merge cho Agent [OPT]
-Mặc định: KHÔNG cấp — chủ dự án tự merge sau khi `code-review` sạch (`GIT-FLOW.md` §11b, G4). Nếu cấp,
-ghi rõ phạm vi ở đây (loại Issue nào) để khỏi phải hỏi lại bằng lời mỗi lần:
-<vd: "Agent được tự merge Issue nhãn `agent-ready` sau khi code-review sạch VÀ CI xanh; Issue
-`decision-needed`/liên quan >1 repo luôn cần chủ dự án tự bấm merge.">
+Mặc định: KHÔNG cấp — chủ dự án tự merge sau khi nghiệm thu tất định XANH và mọi finding `/code-review`
+đã xử lý (`GIT-FLOW.md` § "Năm cổng"). Nếu cấp, ghi rõ phạm vi ở đây (loại Issue nào):
+<vd: "Agent được tự merge Issue nhãn `agent-ready` cấp N0/N1 khi `check.sh --acceptance` XANH và KHÔNG có
+finding nào bị bác bỏ; Issue cấp N2, `decision-needed`, hoặc liên quan >1 repo luôn cần chủ dự án tự bấm.">
 

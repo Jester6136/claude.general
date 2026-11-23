@@ -15,16 +15,19 @@
 
 ## 11b. [OPT] Dùng chính GIT làm hệ quản lý tài liệu & công việc
 
-Phương án O7-A đầy đủ: **Issue = kho TODO · MR/PR = đơn vị review · merge = chấp nhận · CI = cổng máy.**
-Đây là cách bỏ được các file trạng thái tự viết (`ISSUES.md`, bảng TODO thủ công) — trạng thái sống ở
-nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown phải nhớ cập nhật bằng tay.
+Phương án O7-A đầy đủ: **Issue = kho TODO + nơi KHAI đơn vị nghiệm thu · PR = đơn vị review · phán quyết
+nghiệm thu tất định XANH = chấp nhận · merge = ghi nhận sự chấp nhận đó · CI = cổng máy.** Trạng thái
+sống ở nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown phải nhớ cập nhật bằng tay.
 
-**Điều kiện đảo sang O7-A:** ≥2 agent chạy đồng thời trên cùng repo, đo độc lập với số người vận hành
-(`CLAUDE.md` §11, ngay dưới bảng O). Cơ chế: N agent cùng ghi vào một file `§TODO` tạo xung đột merge và
-không agent nào thấy agent khác đang làm gì; N agent mỗi con một Issue + worktree/branch
-(`agent/<issue-id>-<slug>`, xem dưới) + một PR cô lập việc theo agent — `git branch --list 'agent/*'`
-liệt kê đúng ai đang làm gì tại mọi thời điểm. Một người + một agent tại một thời điểm không cần O7-A;
-§TODO trong text (O7-B) đủ.
+**Điều kiện đảo sang O7-A:** `CLAUDE.md` §11, ngay dưới bảng O (số agent chạy đồng thời, không phải số
+người). `git branch --list 'agent/*'` liệt kê đúng ai đang làm gì tại mọi thời điểm.
+
+**Chấp nhận ≠ review ≠ merge.** Ba thứ trước đây bị gộp chung một chữ "merge = chấp nhận":
+- **Nghiệm thu** — phán quyết ĐẠT/KHÔNG ĐẠT, **tất định** (cùng commit + cùng dữ liệu đóng băng ⇒ cùng
+  phán quyết). Định nghĩa gốc + 3 cấp N0/N1/N2: `AGENT.md` §4.1 — không lặp lại ở đây.
+- **Review** — người/LLM đọc diff, **sinh finding**. Không tất định ⇒ KHÔNG được làm phán quyết; mỗi
+  finding phải được chuyển thành test tất định hoặc bác bỏ kèm lý do.
+- **Merge** — thao tác ghi nhận, chỉ hợp lệ khi nghiệm thu XANH và mọi finding đã xử lý.
 
 ### Toàn cảnh: git trở thành **mặt bàn điều hành** cho cả người lẫn agent
 
@@ -42,24 +45,26 @@ flowchart TB
     subgraph H["👤 NGƯỜI (chủ dự án) — đóng nhiều vai, chỉ ở 3 điểm"]
         H1["Vai CHỦ SẢN PHẨM<br/>mở Issue / duyệt Issue agent tự mở"]
         H2["Vai KIẾN TRÚC SƯ<br/>chủ trì Discussion → chốt quyết định → ADR"]
-        H3["Vai NGƯỜI GÁC CỔNG<br/>chạy skill code-review → tự merge HOẶC trao quyền Agent merge"]
+        H3["Vai NGƯỜI GÁC CỔNG<br/>đọc phán quyết + xử lý finding → tự merge HOẶC trao quyền Agent merge"]
     end
 
     subgraph G["🗃️ GIT — nơi công việc SỐNG (không phải nơi lưu trữ)"]
         DISC["💬 Discussion<br/>khảo sát/câu hỏi mở<br/>CHƯA đóng khung phương án"]
-        I["📋 Issue<br/>BẮT BUỘC nhãn <i>agent-ready</i> hoặc <i>decision-needed</i><br/>= hàng đợi việc + ĐẶC TẢ"]
+        I["📋 Issue<br/>BẮT BUỘC nhãn <i>agent-ready</i> hoặc <i>decision-needed</i><br/>= ĐẶC TẢ + ĐƠN VỊ NGHIỆM THU khai trước (N0/N1/N2 + ngưỡng)"]
         B["🌿 Branch/worktree riêng<br/>mỗi Issue một nhánh"]
-        P["🔀 PR/MR<br/>= báo cáo của agent, dạng DIFF"]
-        C{"🤖 CI<br/>make check"}
-        RV{"🔎 skill code-review<br/>BẮT BUỘC trước merge"}
-        M["✅ Merge<br/>= CHẤP NHẬN chính thức"]
+        P["🔀 PR/MR<br/>= báo cáo của agent, dạng DIFF + phán quyết"]
+        C{"🎯 CI — TẤT ĐỊNH<br/>check.sh --all + --acceptance<br/>= PHÁN QUYẾT nghiệm thu"}
+        RV["🔎 skill code-review — KHÔNG tất định<br/>BẮT BUỘC chạy, chỉ SINH finding"]
+        M["✅ Merge<br/>= ghi nhận phán quyết XANH"]
     end
 
     subgraph A["🤖 AGENT — làm việc trong ranh giới Issue"]
         A1["đọc Issue<br/>(REQ nguyên văn + phạm vi CẤM)"]
         A2["overlap scan<br/>đã có ai làm việc này chưa"]
+        A0["viết đơn vị nghiệm thu TRƯỚC<br/>chạy trên nhánh nền → phải ĐỎ"]
         A3["code + tự chạy cổng"]
         A4["mở PR/MR<br/>kèm Closes #NN"]
+        A6["mỗi finding → test tất định<br/>HOẶC bác bỏ kèm lý do"]
         A5["merge<br/>CHỈ khi được H3 trao quyền"]
     end
 
@@ -77,7 +82,7 @@ flowchart TB
     S1 -->|"trao đổi cùng"| DISC
     DISC -->|"đủ rõ để đóng khung → tốt nghiệp"| I
     H2 -->|"quyết định"| D2
-    I -->|"nhận brief"| A1 --> A2 --> A3 --> A4
+    I -->|"nhận brief"| A1 --> A2 --> A0 --> A3 --> A4
     A4 --> P
     B -.->|"nền của"| P
     A1 -.->|"đọc để hiểu ĐÚNG nghĩa"| D1
@@ -87,8 +92,9 @@ flowchart TB
     P --> C
     C -->|"ĐỎ → agent tự sửa, quay lại"| A3
     C -->|"XANH"| RV
-    RV -->|"có finding chặn → agent tự sửa"| A3
-    RV -->|"sạch"| H3
+    RV -->|"finding"| A6
+    A6 -->|"thành test → chạy lại cổng"| C
+    A6 -->|"mọi finding đã xử lý"| H3
     H3 -->|"tự merge"| M
     H3 -.->|"trao quyền"| A5
     A5 --> M
@@ -105,12 +111,12 @@ flowchart TB
     classDef stakeholder fill:#fecaca,stroke:#b91c1c,color:#1c1917
     class H1,H2,H3 human
     class DISC,I,B,P,C,RV,M git
-    class A1,A2,A3,A4,A5 agent
+    class A0,A1,A2,A3,A4,A5,A6 agent
     class D1,D2,D3,D4,D5 doc
     class S1 stakeholder
 ```
 
-**Đọc sơ đồ này ra sáu ý:**
+**Đọc sơ đồ này ra bảy ý:**
 1. **Người (chủ dự án) chỉ chạm 3 điểm** (mở việc · chốt quyết định · merge) — phần còn lại là agent +
    máy. Đó là cách một người đóng được nhiều vai mà không vỡ.
 2. **Issue là ĐẶC TẢ, không phải lời nhắc.** Viết Issue buộc người phải chốt phạm vi **trước khi** agent
@@ -124,8 +130,11 @@ flowchart TB
    quay lại Issue, không tự quyết. Không có mũi tên này thì Issue chỉ là hình thức.
 5. **Docs không nằm trong vòng lặp thực thi — chúng là thứ vòng lặp ĐỌC và GHI vào.** Agent đọc
    Glossary/ADR để hiểu đúng nghĩa; merge ghi ngược lại trạng thái + bài học.
-6. **CI xanh KHÔNG đủ để merge — còn phải qua skill `code-review` (G4)**, rồi H3 mới chọn tự merge hay
-   trao quyền Agent merge (A5) — chi tiết ở § "Năm cổng" dưới đây.
+6. **Phán quyết chỉ đến từ cổng TẤT ĐỊNH (C).** `code-review` (RV) bắt buộc chạy nhưng nằm NGOÀI đường
+   phán quyết: nó sinh finding, finding được biến thành test (rồi chính test đó phán quyết) hoặc bị bác
+   bỏ kèm lý do. Chạy lại RV ra finding khác cũng không làm phán quyết đổi — chi tiết § "Năm cổng".
+7. **Đơn vị nghiệm thu có trước code (A0).** Viết sau code thì nó đo cái code đã làm, không đo cái Issue
+   yêu cầu; và phải thấy nó ĐỎ trên nhánh nền mới biết nó đo được thay đổi (`AGENT.md` §4.1).
 
 ### `constitution.md` — [OPT] tầng luật riêng cho agent, tách khỏi ADR Log
 
@@ -158,18 +167,18 @@ sequenceDiagram
     participant C as ⚙️ CI
     participant R as 🔎 skill code-review
 
-    N->>G: mở Issue `agent-ready`
+    N->>G: mở Issue `agent-ready` (kèm đơn vị nghiệm thu + ngưỡng)
     G-->>A: giao việc (brief tự chứa)
-    A->>A: code + tự chạy cổng
+    A->>A: viết đơn vị nghiệm thu → thấy ĐỎ trên nhánh nền → code
     A->>G: mở MR (Closes #NN)
-    G->>C: kích hoạt pipeline
+    G->>C: check.sh --all + --acceptance
     C-->>A: ĐỎ → agent tự sửa, đẩy lại
     Note over A,C: vòng này KHÔNG làm phiền người
-    C-->>G: XANH
-    N->>R: chạy /code-review (BẮT BUỘC trước merge)
-    R-->>A: có finding chặn → agent tự sửa, đẩy lại
-    R-->>N: sạch → sẵn sàng merge
-    G-->>N: 🔔 (1) "MR sẵn sàng review"
+    C-->>G: XANH = phán quyết nghiệm thu
+    A->>R: chạy /code-review (BẮT BUỘC, ai merge cũng vậy)
+    R-->>A: finding
+    A->>G: mỗi finding → test mới (CI chạy lại) HOẶC bác bỏ kèm lý do
+    G-->>N: 🔔 (1) "MR: nghiệm thu XANH, finding đã xử lý"
     alt tự merge
         N->>G: đọc diff → merge
     else trao quyền cho Agent
@@ -186,13 +195,13 @@ sequenceDiagram
 
 | # | Đánh thức khi | Vì sao đáng làm phiền |
 |---|---|---|
-| 1 | `code-review` sạch, chờ merge | Đây là điểm người phải quyết (tự merge hay trao quyền) — không ai thay được |
+| 1 | Nghiệm thu XANH + mọi finding đã xử lý, chờ merge | Người duyệt các finding bị BÁC BỎ (chỗ duy nhất còn phán đoán) + quyết tự merge hay trao quyền |
 | 2 | Issue tự đóng | Xác nhận vòng đã khép, không cần theo dõi tay |
 | 3 | **Agent bị chặn / gặp chỗ mơ hồ** | Quan trọng nhất: thà bị đánh thức còn hơn để agent tự suy diễn |
 | 4 | Pipeline nhánh chính đỏ | Hỏng thứ đang chạy — khẩn |
 
-★ Thông báo (1) chỉ nổ khi cả CI lẫn `code-review` đều sạch — báo sớm hơn là gọi người tới xem một MR
-còn finding chưa xử lý, đúng thứ 4-thời-điểm này cố tránh.
+★ Thông báo (1) chỉ nổ khi phán quyết XANH và không còn finding bỏ trống — báo sớm hơn là gọi người tới
+xem một MR còn dở, đúng thứ 4-thời-điểm này cố tránh.
 
 ★ **KHÔNG** báo khi: agent đang code · CI đỏ ở nhánh feature (agent tự sửa) · mỗi commit. Báo mọi thứ =
 người tắt thông báo = mất luôn cả 4 cái quan trọng.
@@ -222,7 +231,8 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    `agent-ready`/`decision-needed` nếu repo chưa có (`gh label create`) — `gh issue create --label` báo
    lỗi nếu label chưa tồn tại.
 5. **Migrate JIT (just-in-time) cho việc CHƯA làm, không dump toàn bộ backlog.** Một mục `§TODO` chưa
-   đóng chỉ được viết thành Issue thật khi đủ 5 mục brief tự chứa (§7.3-tương-đương của `AGENT.md`) **và**
+   đóng chỉ được viết thành Issue thật khi điền đủ các trường bắt buộc của `agent-ready.yml` (kể cả đơn vị
+   nghiệm thu) **và**
    sắp được cầm lên làm — không mở Issue thô hàng loạt trước cho cả backlog (Issue là ĐẶC TẢ, viết TODO
    nguyên văn vào Issue không đạt chuẩn đó). `roadmap.md`/`§TODO` cũ đổi vai trò thành backlog + sổ lịch
    sử. Mục **đã đóng** trước ngày chuyển không bắt buộc có Issue, nhưng mở Issue rồi đóng ngay lúc tạo
@@ -261,29 +271,27 @@ nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy tr
 
 ### Năm cổng, theo thứ tự tăng dần chi phí
 
-| Cổng | Nội dung | Chi phí | Đáng làm khi |
-|---|---|---|---|
-| G1 **`make check`** | lint · typecheck · **import-linter** · test/smoke, gom một lệnh | thấp | luôn luôn |
-| G2 **CI chạy G1** | mỗi push/MR | thấp (nếu có runner) | luôn luôn |
-| G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | trung bình | sau khi G2 ổn định |
-| G4 **skill `code-review`** | người (hoặc agent, nếu được trao quyền merge) chạy `/code-review` trên diff, **BẮT BUỘC trước khi merge** — bất kể ai bấm merge | thấp (vài phút, một lệnh) | luôn luôn — điều kiện merge, không phải trigger theo số người |
-| G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | cao | **[TRIGGER]** ≥2 người thật |
+| Cổng | Nội dung | Tất định? | Chi phí | Đáng làm khi |
+|---|---|---|---|---|
+| G1 **`check.sh --all` + `--acceptance`** | lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4) | ✅ — **đây là phán quyết** | thấp | luôn luôn |
+| G2 **CI chạy G1** | mỗi push/MR | ✅ | thấp (nếu có runner) | luôn luôn |
+| G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | ✅ | trung bình | sau khi G2 ổn định |
+| G4 **skill `code-review`** | **BẮT BUỘC chạy trước MỌI merge** (chốt 2026-09-13), ai bấm merge cũng vậy. Vai trò: **sinh finding**, KHÔNG phán quyết. Mỗi finding → test tất định (vào G1) hoặc bác bỏ kèm lý do trong PR | ❌ — nên không được chặn trực tiếp | thấp | luôn luôn |
+| G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | ❌ | cao | **[TRIGGER]** ≥2 người thật |
 
-★ Một mình thì G5 là **tự-review**, không phải review độc lập — giữ *checklist* (nó bắt được lỗi thật,
-kể cả lỗi tự mâu thuẫn trong header tài liệu), nhưng đừng gọi tên sai bản chất. **G4 không thay thế G5:**
-G4 chạy được ngay cả một mình; G5 cần một con người KHÁC — hai cổng độc lập, không cổng nào miễn trừ
-cổng kia.
+★ **Vì sao G4 không được làm cổng chặn trực tiếp:** chạy `/code-review` hai lần trên CÙNG diff có thể ra
+hai bộ finding khác nhau ⇒ "PR này đạt chưa?" phụ thuộc vào lần chạy nào — đúng thứ nghiệm thu tất định
+cấm. Chuyển finding thành test giữ được giá trị phát hiện của G4 mà phán quyết vẫn tất định, và lần sau
+test đó còn chặn hồi quy — finding chỉ nói một lần, test nói mãi. Finding không thể thành test (vd đặt
+tên, độ rõ ràng) → bác bỏ hoặc sửa, kèm một dòng lý do; người gác cổng duyệt các dòng bác bỏ đó.
 
-**Sau khi G4 sạch, người gác cổng (H3) chọn một trong hai — cả hai đều yêu cầu G4 đã chạy, không có
-đường tắt:** tự merge (đọc diff, bấm như bình thường), hoặc **trao quyền cho Agent merge** (A5 ở sơ đồ
-trên) — cấp từng lần hoặc một lần cho cả loại Issue, ghi ở `constitution.md` § "Trao quyền merge cho
-Agent".
+★ Một mình thì G5 là **tự-review**, không phải review độc lập — đừng gọi tên sai bản chất. G4 không thay
+thế G5 và ngược lại.
+
+**Sau G1–G4, người gác cổng (H3) chọn:** tự merge, hoặc **trao quyền cho Agent merge** (A5) — cấp từng lần
+hoặc cho cả loại Issue, ghi ở `constitution.md` § "Trao quyền merge cho Agent".
 
 ### [OPT] GitHub Discussions — trước khi thành Issue
-
-Khoảng trống trước đây trong file này: "Discussion" xuất hiện ở đầu chuỗi O7-A
-(`Discussion → Issue → PR/MR → merge=Approved`, `CLAUDE.md` §11) nhưng chưa có nơi nào nói **Discussions
-là gì cụ thể trên GitHub, khi nào dùng, và ai đọc**. Mục này bù chỗ đó.
 
 **Đối tượng tham gia:** TechLead, Dev, BA join trực tiếp vào thread — không phải một mình chủ dự án tự
 hỏi tự trả lời. **Mục đích:** làm rõ phạm vi – quy mô – nghiệp vụ, và research cách thức, trước khi đóng
@@ -352,8 +360,9 @@ sẵn; tạo tay (`gh issue create` không qua template, hoặc import/retroacti
   nhau (áp dụng khi Issue đủ phức tạp để "cách làm" có thể sai dù "yêu cầu" đúng — Issue nhỏ giữ gộp
   như cũ):
   - **SPEC (bất biến trong phiên):** yêu cầu **trích nguyên văn** từ tài liệu nguồn (không diễn giải lại
-    — paraphrase là nơi hiểu sai chui vào) · vị trí file · tiêu chí chấp nhận · **phạm vi KHÔNG được
-    đụng** · **Blocked by**.
+    — paraphrase là nơi hiểu sai chui vào) · vị trí file · **đơn vị nghiệm thu: cấp N0/N1/N2 + lệnh +
+    kết quả/ngưỡng mong đợi** (`AGENT.md` §4.1 — "chạy thử thấy ổn" không phải tiêu chí) · **phạm vi
+    KHÔNG được đụng** · **Blocked by**.
   - **PLAN (agent điền, SỬA ĐƯỢC giữa chừng):** cách làm dự kiến · thứ tự bước · file dự kiến đụng tới.
     Cách làm sai thì sửa PLAN và ghi lại vì sao; **không** đóng Issue viết lại từ đầu, vì SPEC vẫn đúng.
 
@@ -400,40 +409,21 @@ lần sau không phải nghĩ lại từ đầu. Bối cảnh gốc: 3 repo Pyth
 | **Bật bao nhiêu luật lint** | **chỉ nhóm bắt lỗi thật** (lỗi cú pháp · so sánh sai · dùng tên chưa định nghĩa) | Bật cả bộ ra **337 lỗi**, phần lớn là style ⇒ cổng đỏ-sẵn → người ta tắt đi → mất luôn tác dụng. Nhóm hẹp đang xanh **và** bắt được lỗi thật (xem ngay dưới) |
 | **Bí mật (token) đi đường nào** | qua **tệp**, không qua chat/tham số dòng lệnh | Chat và lịch sử shell đều lưu lại vĩnh viễn. Script không in token ra, và bắt xoá tệp ngay sau khi dùng |
 
-★**Cổng vừa dựng đã bắt được bug thật ngay hôm đầu** — đây là lý lẽ mạnh nhất cho việc dựng cổng.
-Luật "dùng tên chưa định nghĩa" chỉ ra **4 chỗ** trong một tệp xử lý API dựng **closure ôm biến của khối
-`except`**:
+★**Cổng vừa dựng đã bắt được bug thật ngay hôm đầu** — lý lẽ mạnh nhất cho việc dựng cổng. Luật lint
+"dùng tên chưa định nghĩa" chỉ ra một closure ôm biến của khối `except` (Python `del exc` ngầm khi ra
+khỏi khối, closure chạy lúc stream ⇒ `NameError` thay vì thông báo hết quota). Sống nhiều tháng, mọi test
+xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng một chỗ khác chỉ là annotation biến cục bộ
+(không đánh giá lúc chạy) — **đừng báo cáo lỗi thật và lỗi hình thức cùng một giọng**.
 
-```python
-except QuotaExceeded as exc:
-    def _deny():                  # ✗ closure chạy LÚC STREAM, tức là SAU khi khối except kết thúc
-        return f"hết quota: {exc.used}/{exc.limit}"     # NameError
-```
-
-Python **xoá tên đó** khi ra khỏi khối (`del exc` ngầm), mà closure chỉ chạy **lúc stream** — tức là sau
-đó. Hậu quả: người dùng **hết quota** nhận `NameError` thay vì thông báo hướng dẫn. Cách vá: **bắt giá
-trị ra biến thường ngay trong khối** (`used, limit = exc.used, exc.limit`) rồi để closure ôm biến đó.
-Đã **tái hiện bằng một đoạn 8 dòng trước khi vá** (đừng sửa theo suy đoán). Bug này sống trong code đã
-chạy nhiều tháng, mọi bài test đều xanh, không ai thấy.
-
-★**Phân biệt lỗi thật với lỗi hình thức** — cùng một mã lỗi nhưng khác hẳn về hậu quả: một chỗ thứ năm
-dùng kiểu chưa import (`List[str]`) trong **annotation của biến cục bộ** **không** gây lỗi runtime, vì
-Python **không đánh giá** annotation của biến cục bộ (khác annotation ở cấp module/class — đã kiểm bằng
-thực nghiệm, không đoán). Vẫn sửa, nhưng **đừng báo cáo hai thứ đó cùng một giọng**: gộp chúng làm một
-sẽ khiến người đọc hoặc hoảng thừa, hoặc quen tay bỏ qua cả hai.
-
-**Hai lỗi CHÍNH CÁI CỔNG tự gây ra — dựng cổng cũng phải kiểm cổng:**
-1. **Cổng tự tạo rác rồi tự vấp.** `compileall` rải `__pycache__` khắp cây mã; bước tìm module smoke
-   dùng `grep -rln` khớp trúng docstring **nằm trong `.pyc`** → sinh 10 "module" ma
-   (`src.services.__pycache__.reconcile.cpython-312.pyc`) → cổng **đỏ oan**. Vá hai đầu: đẩy bytecode
-   ra ngoài repo bằng `PYTHONPYCACHEPREFIX`, và `grep --include='*.py'`.
-2. **Thông báo có TÁC DỤNG PHỤ.** Dòng nhắc "cài bằng `pip install ruff`" viết trong chuỗi **nháy
-   kép** ⇒ bash coi backtick là **thay thế lệnh** và **chạy thật**, cài ruff vào môi trường máy khi lẽ
-   ra chỉ in một câu chữ. Một cổng kiểm tra **tuyệt đối không được đổi máy đang kiểm**. Dùng nháy đơn.
-
-★Và lỗi thứ ba, của người dùng cổng chứ không phải của cổng: nối `./check.sh | tail -2 && git commit`
-— **exit code của pipeline là của lệnh CUỐI** (`tail`, luôn 0) ⇒ commit vẫn chạy dù cổng ĐỎ. Muốn
-chặn thật thì đừng bọc cổng trong pipeline, hoặc bật `set -o pipefail`.
+**Dựng cổng cũng phải kiểm cổng** — bốn lỗi của chính cổng đã gặp:
+- **(1) Cổng tự tạo rác rồi tự vấp** (`__pycache__` → module ma) và **(2) thông báo có tác dụng phụ**
+  (backtick trong nháy kép chạy thật lệnh cài) — cả hai đã **ép bằng máy** trong `scripts/check.sh`
+  (comment đầu file), không nhắc lại ở đây (L7).
+- **(3)** `./check.sh | tail -2 && git commit` — exit code của pipeline là của `tail` ⇒ commit chạy dù
+  cổng ĐỎ. Đừng bọc cổng trong pipeline, hoặc bật `set -o pipefail`.
+- **(4) Xanh vì skip toàn bộ.** Đo ngày 2026-11-23 trên chính repo playbook này: CI báo `success` 5/5
+  lần chạy gần nhất (`gh run list -L 5`), `check.sh --all` cho `pass=0 fail=0 skip=4` — xanh mà không kiểm gì. Vì vậy `--acceptance`
+  coi skip là ĐỎ (`AGENT.md` §4.2).
 
 ### Khi KHÔNG có runner / KHÔNG đủ quyền — vẫn lấy được phần lớn giá trị
 

@@ -4,15 +4,12 @@
 > commit/push, và **cách tự-kiểm trước khi báo "xong"**. Chép nguyên file này sang repo mới cạnh
 > `CLAUDE.md`, điền các chỗ `<...>`, xoá phần không áp dụng (đánh dấu `[OPT]`).
 > **File này KHÔNG phải:** phương pháp luận viết tài liệu (Glossary/ADR/quy mô S-M-L) — thứ đó thuộc
-> `CLAUDE.md` cạnh nó. Hai file, hai việc, đừng trộn.
->
-> **Bootstrap bắt buộc:** `CLAUDE.md` (auto-load mỗi phiên bởi Claude Code) phải có một dòng ở đầu nói
-> *"nếu có `AGENT.md` ở gốc repo, đọc nó trước khi code"* — thiếu dòng đó thì file này chỉ có tác dụng
-> khi ai đó nhớ nhắc, không tự động xảy ra mỗi phiên. Xem `CLAUDE.md` §0.5.
+> `CLAUDE.md` cạnh nó. Hai file, hai việc, đừng trộn. File này chỉ tự có hiệu lực mỗi phiên nhờ dòng
+> bootstrap ở `CLAUDE.md` §0.5.
 
 **Mục lục:** §1 ranh giới hành động · §2 trước khi đổi hạ tầng/bảo mật · §3 ghi issue — một nguồn sự
-thật · §4 test — CI tự kiểm vs cần hạ tầng sống · §5 commit/push · **§6 bằng chứng trước khi tuyên bố
-(tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A) ·
+thật · **§4 test & NGHIỆM THU TẤT ĐỊNH (N0/N1/N2)** · §5 commit/push · **§6 bằng chứng trước khi tuyên
+bố (tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A) ·
 **§8 research web (học thuật + industry) — TỰ ĐỘNG trước khi chốt phương án/root-cause khó**.
 
 ---
@@ -50,29 +47,75 @@ thật · §4 test — CI tự kiểm vs cần hạ tầng sống · §5 commit/
 
 ## 3. Ghi Issue / Feature / Task — MỘT nguồn sự thật, không phân mảnh
 
-Chọn MỘT trong hai theo O7 (`CLAUDE.md` §11). Điều kiện chọn: số AGENT chạy đồng thời trên repo này, không
-phải số người vận hành (`CLAUDE.md` §11, dưới bảng O). Ghi rõ trong `docs/README.md` đã chọn cái nào.
+Chọn MỘT trong hai theo O7 — điều kiện chọn (số AGENT chạy đồng thời, không phải số người) ở `CLAUDE.md`
+§11, ngay dưới bảng O. Ghi rõ trong `docs/README.md` đã chọn cái nào.
 
-- **O7-B (mặc định khi chỉ một agent tại một thời điểm):** mọi vòng "raise issue → fix → verify" ghi vào
-  `<roadmap>.md §TODO` (mục có sẵn khớp chủ đề, hoặc thêm mục mới cùng khuôn ở `CLAUDE.md` §5.4). Trạng
-  thái: `⬜` chưa làm · `🔨` code xong chưa verify · `✅` code+verify · `★` bài học đáng nhớ. Không tạo
-  file log rời (`ISSUES.md`/`CHANGELOG.md`) — phân mảnh tri thức là cách mất nó.
-- **O7-A (git-as-management, xem `GIT-FLOW.md`), khi ≥2 agent chạy đồng thời trên repo, kể cả nếu cả hai
-  do một người vận hành:** GitHub/GitLab Issue là nguồn sự thật cho việc đang mở; mỗi agent một Issue +
-  worktree/branch (`agent/<issue-id>-<slug>`) + một PR. Chuyển từ O7-B sang O7-A trên một project đang
-  chạy: `GIT-FLOW.md` §11b "Kích hoạt O7-A giữa chừng" — có thứ tự bước cụ thể, không tuỳ tiện đảo.
+- **O7-B:** mọi vòng "raise issue → fix → verify" ghi vào `<roadmap>.md §TODO` (khuôn `CLAUDE.md` §5.4,
+  trạng thái ⬜/🔨/✅ theo L5). Không tạo file log rời (`ISSUES.md`/`CHANGELOG.md`).
+- **O7-A:** GitHub/GitLab Issue là nguồn việc-đang-mở; quy trình ở `GIT-FLOW.md` (kể cả cách chuyển từ
+  O7-B giữa chừng).
 
 Đổi TODO/Issue **CÙNG COMMIT** với code fix — doc lệch code = nợ kỹ thuật, coi như việc chưa xong.
 
-## 4. Test — CI tự kiểm được vs cần GPU/hạ tầng sống
+## 4. Test & NGHIỆM THU TẤT ĐỊNH — CI tự kiểm được vs cần GPU/hạ tầng sống
+
+### 4.1 Nguyên tắc gốc: tất định nằm ở BỘ CHẤM + DỮ LIỆU ĐÓNG BĂNG, không nằm ở thứ được chấm
+
+**Đơn vị nghiệm thu** = một lệnh chạy được, trả **phán quyết ĐẠT/KHÔNG ĐẠT**, sao cho **cùng commit + cùng
+dữ liệu đã đóng băng ⇒ cùng phán quyết**, ai chạy, chạy lúc nào cũng vậy. Mỗi việc (Issue/§TODO) có ≥1
+đơn vị nghiệm thu, **khai TRƯỚC khi code** (kể cả ngưỡng), và **đã từng ĐỎ** trên nhánh nền trước khi fix
+(negative control, `CLAUDE.md` §6.4) — đơn vị chưa từng đỏ chưa chứng minh nó đo được thay đổi.
+
+Thứ KHÔNG BAO GIỜ được làm phán quyết nghiệm thu, vì chạy lại có thể ra kết luận khác:
+- output sống của LLM/model (không tất định dù `temperature=0` — đổi phiên bản phía nhà cung cấp, đổi
+  batching, đổi phần cứng đều làm lệch);
+- LLM-as-judge chạy sống (mẫu số do chính judge quyết — `CLAUDE.md` §6.3);
+- reviewer bằng LLM (skill `/code-review`) — nó **sinh finding**, không **ra phán quyết** (xem `GIT-FLOW.md`
+  § "Năm cổng", G4);
+- "nhìn output thấy ổn" của người — đó là review, không phải nghiệm thu.
+
+**Ba cấp nghiệm thu** — phân theo vị trí của thứ không tất định, không theo độ quan trọng:
+
+| Cấp | Nghiệm thu cái gì | Cách làm cho tất định | Chạy ở đâu |
+|---|---|---|---|
+| **N0 — Core/platform** | Logic, bất biến, hợp đồng của lõi | Thành phần không tất định (LLM, mạng, đồng hồ, random) thay bằng **fake/stub** do core định nghĩa; assert chính xác (giá trị, schema, property-based với seed cố định) | Tầng A — CI chặn |
+| **N1 — Phần mở rộng/domain** (adapter model mới, plugin domain, nhánh nghiệp vụ) | Phần mở rộng cắm **đúng hợp đồng** của core | **Bộ contract test do CORE cung cấp** — mọi adapter chạy CÙNG một bộ, adapter không tự viết tiêu chí cho chính nó. Lời gọi model thật được **ghi lại một lần (record) thành cassette**, CI chỉ **replay** | Tầng A — CI chặn (replay không cần hạ tầng sống) |
+| **N2 — Chất lượng output không tất định** (model/prompt/domain có ĐỦ TỐT không) | Hành vi thật của thứ không tất định | (1) **Golden set đóng băng**, có version · (2) pin model + version + prompt-version + tham số · (3) chạy sống MỘT lần ⇒ **snapshot output có hash** · (4) **bộ chấm tất định** (exact/schema/regex/sai số số học) trên snapshot so với **ngưỡng đã khai trong Issue trước khi chạy** · (5) báo cáo theo `CLAUDE.md` §6 (mẫu số, `None`, `n`) | Sinh snapshot: tầng B. **Chấm lại snapshot: tầng A — CI chặn** |
+
+Luật riêng của N2 (thiếu một cái là phán quyết hết tất định):
+- **Sinh lại snapshot = một LẦN NGHIỆM THU MỚI**, không phải "chạy lại cho xanh". Mọi lần sinh cho cùng
+  một Issue đều ghi vào PR (hash + phán quyết) — chọn lần đẹp nhất trong N lần chạy là gian lận mẫu số.
+- Cần LLM-as-judge thì **output của judge cũng là một phần snapshot** (đóng băng, pin version, kèm
+  coverage `CLAUDE.md` §6.3); phán quyết tính tất định từ đó. Ưu tiên bộ chấm không-LLM khi làm được.
+- Ngưỡng khai trước, không chỉnh sau khi thấy số. Đổi ngưỡng = sửa SPEC của Issue, ghi lý do.
+- Snapshot nhỏ → commit vào repo (`acceptance/snapshots/`); lớn → kho artifact, repo giữ hash + đường dẫn.
+
+**Core vs phần mở rộng — ví dụ chuẩn:** thêm một model LLM để xử lý kết quả agent. KHÔNG nghiệm thu bằng
+"chạy thử thấy model trả lời ổn". Làm đúng thứ tự: (1) core định nghĩa interface + fake + bộ contract
+test + bộ chấm → nghiệm thu **N0**; (2) model mới là một adapter → qua bộ contract của core bằng replay
+(**N1**); (3) chất lượng của nó → golden set + snapshot + ngưỡng khai trước (**N2**). Output model dao động
+giữa các lần chạy KHÔNG làm phán quyết dao động theo — phán quyết chỉ đọc snapshot đã đóng băng.
+
+**Flaky = loại khỏi cổng ngay.** Một đơn vị cho kết quả khác nhau trên CÙNG commit không phải đơn vị
+nghiệm thu: cách ly (quarantine) + mở Issue sửa, KHÔNG retry-cho-tới-khi-xanh. `check.sh --acceptance`
+tự chạy mỗi đơn vị 2 lần và đỏ nếu lệch (§4.2).
+
+### 4.2 Hiện thực bằng máy
+
+Mỗi đơn vị nghiệm thu là một file chạy được `acceptance/<issue-id>-<slug>.sh` (exit 0 = ĐẠT; exit 77 =
+không chạy được, **tính là ĐỎ**; khác = KHÔNG ĐẠT). `./scripts/check.sh --acceptance` chạy tất cả, mỗi cái
+2 lần. Thư mục chưa có đơn vị nào = 0 đơn vị, không phải lỗi — nhưng mọi việc đóng sau ngày áp quy tắc
+này phải thêm đơn vị của nó.
+
+### 4.3 Tầng chạy: A (CI) vs B (hạ tầng sống)
 
 Bất kỳ project nào có ≥1 test đụng model/DB-sống/GPU sẽ cần ranh giới này sớm hay muộn — đặt tên tường
 minh ngay từ Sprint 0 rẻ hơn nhiều so với để CI tự khám phá qua timeout.
 
 | Tầng | Gồm gì | Chạy ở đâu | Cơ chế phân biệt (MÁY, không phải quy ước bằng lời) |
 |---|---|---|---|
-| **A — CI tự kiểm được** | static (cú pháp/boundary/lint nhóm bắt lỗi thật) · smoke THUẦN (không chạm DB/mạng/GPU) · test plumbing/logic thuần | `./scripts/check.sh --all` — chạy được trên runner hosted: không GPU, không service sống, chỉ cần cài dependency | Marker/naming quy ước rõ ràng — vd docstring `PURE smoke`, hoặc tên file `test_*` cho unit thuần |
-| **B — cần GPU/hạ tầng sống** | LLM/model thật, DB thật, service phụ thuộc thật | **CHỈ** máy dev/máy hạ tầng thật, thủ công hoặc lịch riêng — **KHÔNG BAO GIỜ** trong CI hosted | KHÔNG mang marker tầng A; đặt tên khác hẳn (`eval_*`, `*_e2e`, `smoke_*_e2e`) để "cố ý loại trừ" không lẫn "quên" |
+| **A — CI tự kiểm được** | static (cú pháp/boundary/lint nhóm bắt lỗi thật) · smoke THUẦN · test plumbing/logic thuần · **N0 · N1 (replay) · chấm lại snapshot N2** | `./scripts/check.sh --all` + `--acceptance` — chạy được trên runner hosted: không GPU, không service sống | Marker/naming quy ước rõ ràng — vd docstring `PURE smoke`, `test_*`, `acceptance/*.sh` |
+| **B — cần GPU/hạ tầng sống** | **sinh** snapshot N2 · **record** cassette N1 · e2e với DB/service thật | **CHỈ** máy dev/máy hạ tầng thật — **KHÔNG BAO GIỜ** trong CI hosted. Sản phẩm của tầng B (snapshot/cassette) được commit/lưu để tầng A chấm lại | KHÔNG mang marker tầng A; đặt tên khác hẳn (`eval_*`, `record_*`, `*_e2e`) |
 
 Liệt kê CỤ THỂ tầng B theo module ngay khi phát hiện (đừng để "ngầm hiểu") — bảng trống dưới đây điền
 dần:
@@ -81,8 +124,8 @@ dần:
 |---|---|
 | `<điền khi phát hiện>` | `<LLM thật / DB sống / GPU>` |
 
-★ Workflow CI **CHỈ được phép** gọi `./scripts/check.sh --all` (= tầng A nguyên vẹn). Không job nào gọi
-trực tiếp file tầng B. Thêm module tầng A mới thì tự động được gom vào (marker/naming, không sửa
+★ Workflow CI **CHỈ được phép** gọi `./scripts/check.sh` (`--all` và `--acceptance` = tầng A nguyên
+vẹn). Không job nào gọi trực tiếp file tầng B. Thêm module tầng A mới thì tự động được gom vào (marker/naming, không sửa
 workflow); thêm module tầng B thì **đừng gắn marker tầng A** — gắn nhầm là cách nhanh nhất khiến CI đỏ
 oan vì thiếu hạ tầng, tưởng nhầm là lỗi code.
 
@@ -117,6 +160,8 @@ Trước khi nói một việc **đã xong** (đóng TODO, đóng Issue, báo c�
 - [ ] Mọi lệnh **Verify** ghi trong doc — **đã thực sự chạy trong phiên này**, không phải nhớ lại/suy ra
       từ một lần chạy trước đó có thể đã cũ.
 - [ ] Mọi con số/tỉ lệ — có mẫu số đi kèm (`CLAUDE.md` §6.1); chưa đo được ghi `None`, không phải `0`.
+- [ ] Việc vừa xong có **đơn vị nghiệm thu tất định** (§4.1): đã khai trước khi code, đã thấy ĐỎ trên
+      nhánh nền, giờ XANH qua `./scripts/check.sh --acceptance`. "Chạy thử thấy output ổn" không đạt.
 - [ ] Nếu vừa sửa code dựa trên "hợp đồng cũ lệch hợp đồng mới" — đã **đọc source thật** của hàm/field
       đó để xác nhận hợp đồng mới, không đoán từ tên biến hay từ thông báo lỗi một mình.
 
@@ -126,24 +171,19 @@ lại đúng những lỗi bước này bắt được.
 
 ## 7. Vòng lặp làm việc: Issue → worktree → implement → cổng → PR → review → merge [OPT — chỉ khi chọn O7-A]
 
-Chi tiết đầy đủ (constitution.md · quy ước nhánh `agent/*` · run record · SPEC/PLAN · hệ sinh thái nhiều
-repo) ở **`GIT-FLOW.md`** — không lặp lại ở đây (L2 SSOT). Tóm tắt vòng lặp mỗi việc:
+Chi tiết (lý do từng bước, cổng G1–G5, SPEC/PLAN, run record, nhiều repo) ở **`GIT-FLOW.md`** — đây
+chỉ là checklist thao tác:
 
-1. `git worktree add .worktrees/<slug> -b <prefix>/<issue-id>-<slug> origin/<nhánh-nền>`.
-2. Overlap scan 2 phút (đã có ai làm việc này chưa) trước khi code.
-3. Implement trong ranh giới Issue/SPEC. **Gặp chỗ MƠ HỒ → DỪNG, hỏi ở Issue, KHÔNG tự suy diễn.**
-4. `./scripts/check.sh --all` — ĐỎ thì tự sửa, đừng mở PR.
-5. Chạy §6 (checklist bằng chứng) trước khi mở PR.
-6. Mở PR, `Closes #NN`, một commit gói trọn một việc.
-7. **Trước khi merge, BẤT KỂ AI BẤM MERGE:** chạy skill `/code-review` trên diff — BẮT BUỘC, `check.sh
-   --all`/CI xanh KHÔNG đủ (cổng máy khác review nội dung: `code-review` còn soi tuân thủ CLAUDE.md, bug
-   lộ qua đọc diff, ngữ cảnh git-blame/PR cũ). Có finding chặn → quay lại bước 4, đừng để người bấm merge
-   một PR còn finding. Xem `GIT-FLOW.md` §11b "Năm cổng" — G4. ★Diện áp dụng rộng hơn một quyết định
-   trước đó chỉ bắt review khi agent tự merge — chủ dự án đã chốt lại (phiên 2026-09-13): bắt buộc cho
-   MỌI merge, kể cả người tự bấm, không chỉ khi agent được trao quyền.
-8. Merge — người tự bấm, hoặc agent bấm thay **CHỈ khi** được trao quyền tường minh (`constitution.md` §
-   "Trao quyền merge cho Agent"); không có trao quyền thì agent KHÔNG tự merge dù cổng đã sạch.
-9. Sau merge: cập nhật `HANDOFF.md` + đóng Issue + dọn worktree, cùng commit với code.
+1. `git worktree add .worktrees/<slug> -b agent/<issue-id>-<slug> origin/<nhánh-nền>` + overlap scan.
+2. **Viết đơn vị nghiệm thu TRƯỚC** (`acceptance/<issue-id>-<slug>.sh`, cấp N0/N1/N2 theo SPEC, §4.1) →
+   chạy trên nhánh nền → phải ĐỎ.
+3. Implement trong ranh giới SPEC. **Gặp chỗ MƠ HỒ → DỪNG, hỏi ở Issue, KHÔNG tự suy diễn.**
+4. `./scripts/check.sh --all && ./scripts/check.sh --acceptance` — ĐỎ thì tự sửa, đừng mở PR.
+5. Chạy §6 → mở PR (`Closes #NN`, điền "Phán quyết nghiệm thu").
+6. `/code-review` trên diff — BẮT BUỘC trước MỌI merge, ai bấm cũng vậy (chốt 2026-09-13). Mỗi finding
+   → **thành test tất định** (quay lại bước 4) hoặc **bác bỏ kèm lý do** trong PR. Không finding nào để
+   trống.
+7. Merge — người bấm, hoặc agent **CHỈ khi** được trao quyền (`constitution.md`). Sau merge: `HANDOFF.md`.
 
 Nếu chưa chọn O7-A (đang dùng O7-B — sửa thẳng, ADR khi đảo quyết định): bỏ qua §7, dùng §3 (roadmap
 §TODO) làm nguồn việc-đang-mở.

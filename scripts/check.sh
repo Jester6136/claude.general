@@ -81,11 +81,41 @@ run_tests() {
   skip "TODO: điền lệnh test tầng A ở scripts/check.sh::run_tests (mode=$mode)"
 }
 
+# ── Nghiệm thu TẤT ĐỊNH (AGENT.md §4) — chạy riêng bằng --acceptance ─────────
+# Mỗi đơn vị = một file acceptance/<issue-id>-<slug>.sh. Exit 0 = ĐẠT · 77 = không chạy được (thiếu dữ
+# liệu/hạ tầng) · khác = KHÔNG ĐẠT. KHÁC các bước trên: SKIP (77) tính là ĐỎ — một đơn vị nghiệm thu đã
+# khai mà không chạy được thì chưa nghiệm thu. Mỗi đơn vị chạy 2 lần; exit code lệch = FLAKY = ĐỎ (không
+# tất định thì không được làm phán quyết). Không có đơn vị nào = 0 đơn vị (không phải lỗi).
+# N2: đơn vị chỉ CHẤM LẠI snapshot đã đóng băng — KHÔNG gọi model sống ở đây (đó là tầng B).
+run_acceptance() {
+  echo
+  echo "Nghiệm thu tất định (acceptance/*.sh, mỗi đơn vị chạy 2 lần)"
+  local dir="${ACCEPTANCE_DIR:-acceptance}" unit rc1 rc2 n=0
+  for unit in "$dir"/*.sh; do
+    [ -e "$unit" ] || continue
+    n=$((n+1))
+    rc1=0; bash "$unit" >/dev/null 2>&1 || rc1=$?
+    rc2=0; bash "$unit" >/dev/null 2>&1 || rc2=$?
+    if [ "$rc1" -ne "$rc2" ]; then
+      fail "$unit — FLAKY: lần 1 exit=$rc1, lần 2 exit=$rc2 (cách ly + mở Issue, KHÔNG retry cho xanh)"
+    elif [ "$rc1" -eq 77 ]; then
+      fail "$unit — không chạy được (exit 77): đơn vị đã khai mà không chạy = CHƯA nghiệm thu"
+    elif [ "$rc1" -eq 0 ]; then
+      pass "$unit"
+    else
+      fail "$unit — KHÔNG ĐẠT (exit=$rc1). Chạy tay để xem chi tiết: bash $unit"
+    fi
+  done
+  [ "$n" -eq 0 ] && echo "  · 0 đơn vị nghiệm thu trong $dir/ — việc đóng từ nay phải thêm đơn vị của nó"
+  return 0
+}
+
 case "$MODE" in
   --syntax)  run_syntax ;;
   --boundary) run_boundary ;;
   --lint)    run_lint ;;
   --smoke|--test|--pytest) run_tests ;;
+  --acceptance) run_acceptance ;;
   --all)
     run_syntax
     run_boundary
@@ -93,7 +123,7 @@ case "$MODE" in
     run_tests
     ;;
   *)
-    echo "Dùng: $0 [--syntax|--boundary|--lint|--smoke|--all]" >&2
+    echo "Dùng: $0 [--syntax|--boundary|--lint|--smoke|--all|--acceptance]" >&2
     exit 2
     ;;
 esac
