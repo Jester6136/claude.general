@@ -4,7 +4,7 @@
      merge nhưng chỉ SINH finding — xử lý hết ở mục cuối (GIT-FLOW.md § "Năm cổng", G4). -->
 
 Closes #<NN>
-<!-- Chạm >1 repo? Đóng Issue ở repo khác: Closes owner/repo#N (GIT-FLOW.md §11c) -->
+<!-- Chạm >1 repo? Đóng Issue ở repo khác: Closes owner/repo#N (MULTI-REPO.md) -->
 
 ## Gốc rễ + fix (1-2 câu)
 

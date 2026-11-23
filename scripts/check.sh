@@ -9,7 +9,7 @@
 # kép là command substitution và CHẠY THẬT (bài học thật: dòng nhắc "cài bằng `pip install ruff`" từng
 # tự cài ruff vào máy). Dùng nháy đơn cho mọi chuỗi hiển thị.
 #
-# ⚠ ${CI:-} do GitHub Actions/GitLab CI tự set — dùng làm fallback: không có service sống (docker/db) VÀ
+# ⚠ ${CI:-} do GitHub Actions tự set — dùng làm fallback: không có service sống (docker/db) VÀ
 # đang CI → chạy native thay vì skip, để CI vẫn kiểm được logic thuần dù không có hạ tầng app.
 set -euo pipefail
 

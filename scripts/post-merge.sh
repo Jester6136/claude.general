@@ -78,7 +78,7 @@ for ref in $refs; do
     fi
     closed_local="$closed_local $n"; closed_refs="$closed_refs $this_repo#$n"
   else
-    echo "  · $ref ở repo khác — đơn vị nghiệm thu thuộc repo đó (GIT-FLOW.md §11c)"
+    echo "  · $ref ở repo khác — đơn vị nghiệm thu thuộc repo đó (MULTI-REPO.md)"
   fi
   if [ "$st" = OPEN ]; then run gh issue close "$n" -R "$repo" --comment "Đóng sau khi $this_repo#$PR merge và đạt nghiệm thu (post-merge.sh)."
   else echo "  ✓ $ref đã đóng"; fi

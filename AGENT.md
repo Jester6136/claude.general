@@ -52,7 +52,7 @@ Chọn MỘT trong hai theo O7 — điều kiện chọn (số AGENT chạy đ�
 
 - **O7-B:** mọi vòng "raise issue → fix → verify" ghi vào `<roadmap>.md §TODO` (khuôn `CLAUDE.md` §5.4,
   trạng thái ⬜/🔨/✅ theo L5). Không tạo file log rời (`ISSUES.md`/`CHANGELOG.md`).
-- **O7-A:** GitHub/GitLab Issue là nguồn việc-đang-mở; quy trình ở `GIT-FLOW.md` (kể cả cách chuyển từ
+- **O7-A:** GitHub Issue là nguồn việc-đang-mở; quy trình ở `GIT-FLOW.md` (kể cả cách chuyển từ
   O7-B giữa chừng).
 
 Đổi TODO/Issue **CÙNG COMMIT** với code fix — doc lệch code = nợ kỹ thuật, coi như việc chưa xong.

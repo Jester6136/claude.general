@@ -1,7 +1,7 @@
 # Roadmap & TODO — <PROJ>
 
 > **MỘT** nơi ghi mọi vòng "raise issue → fix → verify" (nếu dùng O7-B). Không tạo `ISSUES.md`/
-> `CHANGELOG.md` rời — phân mảnh tri thức là cách mất nó. Nếu project đã chuyển sang O7-A (GitHub/GitLab
+> `CHANGELOG.md` rời — phân mảnh tri thức là cách mất nó. Nếu project đã chuyển sang O7-A (GitHub
 > Issue là nguồn việc-đang-mở), phần §TODO dưới đây chỉ còn giữ LỊCH SỬ, không còn nhận mục mới.
 
 ## 1. Năng lực đã dựng
