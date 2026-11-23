@@ -249,8 +249,8 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
 
 ### Plan → Epic/Story — raise việc từ plan bằng máy
 
-Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, cài
-scope project trong `.claude/settings.json`, **ghim `7.0.2-22f0b463e7a5`**), lưu ở
+Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, bật ở
+`.claude/settings.json`; **bản ghim = `PINNED_VERSION` trong `scripts/plan-to-issues.py`** — nguồn duy nhất), lưu ở
 `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`, đi qua PR như mọi tài liệu. **Merge plan vào `main`** ⇒
 workflow `plan-to-issues.yml` gọi `scripts/plan-to-issues.py`:
 
@@ -262,25 +262,32 @@ workflow `plan-to-issues.yml` gọi `scripts/plan-to-issues.py`:
 Story được link vào epic hai đường (sub-issue + task-list) — `post-merge.sh` đóng epic khi story cuối
 xong. **Từ chối thay vì đoán:** plan thiếu H1/Goal/`**Files:**`, hoặc task không có cặp `Expected: … PASS`
 (= task không có đơn vị nghiệm thu) ⇒ job đỏ, **không tạo Issue nào**; plan còn thay đổi chưa commit ⇒ từ
-chối. Chạy lại an toàn (marker ẩn — Issue đã raise thì bỏ qua). Chạy tay: `scripts/plan-to-issues.py
-<plan> --dry-run`.
+chối; task `Consumes:` trỏ task không đứng trước ⇒ từ chối; plan đã raise bị đổi tên/di chuyển ⇒ job đỏ
+(marker theo path — xử lý như plan mới sẽ raise trùng). Chạy lại an toàn: marker ẩn — Issue đã raise thì bỏ
+qua; body epic chỉ được **nối** dòng story còn thiếu, không viết lại (giữ `[x]`, con thêm tay). Chạy tay:
+`scripts/plan-to-issues.py <plan> --dry-run`.
 
 ★ **Vì sao ghim plugin và bám bản ĐÃ CÀI:** parser được viết theo `SKILL.md` của bản cài
-(`~/.claude/plugins/cache/anthropic-plugin-directory/superpowers/7.0.2-22f0b463e7a5/`), không theo nhánh
-`main` trên GitHub — nhánh `main` đổi bất kỳ lúc nào; bản ghim thì không. Nâng phiên bản plugin = đối chiếu
-lại `SKILL.md`, sửa `PINNED_*` trong script, chạy lại bộ kiểm — một thay đổi có chủ đích, không trôi ngầm.
+(`~/.claude/plugins/cache/anthropic-plugin-directory/superpowers/<PINNED_VERSION>/`), không theo nhánh
+`main` trên GitHub — nhánh `main` đổi bất kỳ lúc nào; bản ghim thì không. ⚠ `.claude/settings.json` chỉ
+**bật** plugin, **không** ghim phiên bản (bản cài nằm ở user-level `~/.claude/plugins/installed_plugins.json`)
+⇒ ghim được **ép bằng máy**: `scripts/plan-to-issues.py --check-pin` (cũng tự chạy mỗi lần raise) — máy
+có cài mà lệch `PINNED_VERSION` ⇒ từ chối; CI không cài plugin ⇒ chỉ áp định dạng của bản ghim. Chạy
+`--check-pin` sau khi cài/cập nhật plugin. Nâng phiên bản = đối chiếu lại `SKILL.md`, sửa `PINNED_*`, chạy
+lại bộ kiểm — thay đổi có chủ đích, không trôi ngầm.
 
 ### Sau merge — đóng vòng (Issue · Epic · nhánh · worktree)
 
 Merge chưa phải điểm cuối: Issue/epic còn mở, nhánh và worktree còn nằm đó thì "đang làm gì" (`gh issue
 list`, `git branch --list 'agent/*'`) bắt đầu nói dối. Đóng vòng bằng **một lệnh tất định**, không bằng trí
-nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước). Cổng vào: PR **MERGED** + **mọi check SUCCESS** —
+nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước, từ worktree chính). Cổng vào: PR **MERGED** + không
+còn check đang chạy + lần chạy mới nhất của **mọi (workflow, job) SUCCESS** —
 không có check nào cũng là KHÔNG đạt (không có phán quyết thì không có gì để đóng).
 
 | Thứ | Đóng khi | Ai/cái gì đóng |
 |---|---|---|
 | **Issue** | PR có `Closes #N` merge + nghiệm thu XANH + `acceptance/<N>-*.sh` có trên `origin/<base>` | GitHub tự đóng; script đóng nốt cái bỏ sót, và **MỞ LẠI** Issue cùng repo bị đóng mà không có đơn vị (vd đóng qua commit message/sidebar — CI không thấy) |
-| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/epic/<E>/*.sh` (nếu có) XANH trên `origin/<base>` | Script — con = **chỉ link tường minh**: sub-issue (đủ mọi trang) ∪ dòng task-list `- [ ] #N` trong body epic. Con chỉ tự khai ô "Epic" mà chưa link ⇒ cảnh báo, KHÔNG đóng epic |
+| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/epic/<E>/*.sh` (nếu có) XANH trên `origin/<base>` | Script — con = **chỉ link tường minh**, định danh đủ `owner/repo#N`: sub-issue (đủ mọi trang, kể cả repo khác) ∪ dòng task-list `- [ ] [owner/repo]#N` trong body epic. Con chỉ tự khai ô "Epic" mà chưa link ⇒ cảnh báo, KHÔNG đóng epic |
 | **Worktree** | Nhánh của nó đã merge, worktree sạch | Script — `git worktree remove` KHÔNG `--force`; còn thay đổi chưa commit thì DỪNG, báo |
 | **Nhánh local/remote** | Đã xác nhận MERGED (cổng ở trên) và là `agent/*` của chính repo | Script — `branch -D` (squash/rebase làm `-d` từ chối) + `push --delete`. Nhánh khác (`develop`, fork) không bao giờ bị xoá |
 

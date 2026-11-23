@@ -142,7 +142,7 @@ khi viết test đầu tiên, đừng để dồn.
 
 ### 4.4 Giao diện — Playwright MCP để NHÌN, Playwright test để PHÁN QUYẾT
 
-`.mcp.json` khai Playwright MCP (`@playwright/mcp` 0.0.84 + cả cây phụ thuộc khoá bằng
+`.mcp.json` khai Playwright MCP (`@playwright/mcp` ở phiên bản ghi trong `tools/playwright-mcp/package.json` + cả cây phụ thuộc khoá bằng
 `tools/playwright-mcp/package-lock.json`, Chromium ghim theo `playwright-core` đó, `--headless --isolated
 --viewport-size 1280x720`). Agent dùng nó để **xem** UI và **sinh finding**, như `/code-review`. Mỗi finding
 về giao diện → một test Playwright dạng script (cùng `playwright-core` đã khoá, viewport cố định, tắt

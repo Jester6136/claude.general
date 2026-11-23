@@ -2,7 +2,7 @@
 """plan-to-issues.py <plan.md> [--dry-run] — biến MỘT plan của superpowers:writing-plans thành 1 Epic + N Story.
 
 Định dạng plan bám đúng bản ĐÃ CÀI và ĐÃ GHIM (không bám nhánh main trên GitHub):
-    superpowers@anthropic-plugin-directory 7.0.2-22f0b463e7a5 — skills/writing-plans/SKILL.md
+    PINNED_PLUGIN @ PINNED_VERSION (bên dưới — nguồn duy nhất của số phiên bản) — skills/writing-plans/SKILL.md
 Plan khác định dạng ⇒ TỪ CHỐI và liệt kê chỗ sai, không đoán. Plugin đổi phiên bản ⇒ đối chiếu lại
 SKILL.md, cập nhật PINNED_* bên dưới, chạy lại bộ kiểm (GIT-FLOW.md § "Plan → Epic/Story").
 
@@ -20,9 +20,12 @@ SKILL.md, cập nhật PINNED_* bên dưới, chạy lại bộ kiểm (GIT-FLOW
   Story được link vào epic hai đường: sub-issue (API) + dòng task-list trong body epic (post-merge.sh đọc cả hai).
 
 Chạy lại an toàn: mỗi Issue mang marker ẩn `<!-- plan-to-issues: plan=<path> task=<N|epic> -->`; Issue đã có
-thì bỏ qua (không sửa) — plan đã raise mà cần đổi thì sửa Issue tay hoặc viết plan mới.
+thì bỏ qua (không sửa); body epic chỉ được NỐI thêm dòng story còn thiếu, không viết lại. Plan đã raise mà
+cần đổi thì sửa Issue tay hoặc viết plan mới. Plan đã raise KHÔNG được đổi tên/di chuyển (marker theo path —
+workflow từ chối rename).
 """
 import json
+import os
 import re
 import subprocess
 import sys
@@ -30,6 +33,22 @@ import sys
 PINNED_PLUGIN = "superpowers@anthropic-plugin-directory"
 PINNED_VERSION = "7.0.2-22f0b463e7a5"
 MARK = "<!-- plan-to-issues: plan={path} task={task} -->"
+INSTALLED = os.path.expanduser("~/.claude/plugins/installed_plugins.json")
+
+
+def check_pin():
+    """`.claude/settings.json` chỉ BẬT plugin, KHÔNG ghim phiên bản — bản cài nằm ở user-level
+    (~/.claude/plugins/installed_plugins.json). Nên ghim được ép ở đây: máy có cài mà lệch PINNED_VERSION ⇒
+    từ chối (plan có thể theo định dạng khác). Máy không cài (CI) ⇒ chỉ áp định dạng của PINNED_VERSION."""
+    try:
+        entries = json.load(open(INSTALLED)).get("plugins", {}).get(PINNED_PLUGIN, [])
+    except FileNotFoundError:
+        return f"(máy này không cài {PINNED_PLUGIN} — chỉ kiểm định dạng theo {PINNED_VERSION})"
+    versions = sorted({e.get("version") for e in entries})
+    if versions != [PINNED_VERSION]:
+        sys.exit(f"✗ {PINNED_PLUGIN} đang cài {versions or 'KHÔNG CÓ'} ≠ ghim {PINNED_VERSION}. Cài đúng bản ghim, "
+                 f"hoặc nâng ghim có chủ đích (GIT-FLOW.md § \"Plan → Epic/Story\").")
+    return f"✓ {PINNED_PLUGIN} đã cài đúng bản ghim {PINNED_VERSION}"
 
 
 def sh(*args, check=True):
@@ -37,6 +56,19 @@ def sh(*args, check=True):
     if check and r.returncode != 0:
         sys.exit(f"✗ lệnh lỗi: {' '.join(args)}\n{r.stderr.strip()}")
     return r.stdout
+
+
+def _heading_end(rest):
+    """Vị trí heading cấp ≤3 kế tiếp NGOÀI code fence (vd '## Self-Review') — khối task dừng ở đó.
+    `# comment` trong ```bash/```python không phải heading."""
+    pos, fence = 0, False
+    for line in rest.splitlines(keepends=True):
+        if line.lstrip().startswith("```"):
+            fence = not fence
+        elif not fence and re.match(r"#{1,3} ", line):
+            return pos
+        pos += len(line)
+    return len(rest)
 
 
 def parse(text):
@@ -56,9 +88,7 @@ def parse(text):
     for i, h in enumerate(heads):
         n, name = int(h.group(1)), h.group(2).strip()
         end = heads[i + 1].start() if i + 1 < len(heads) else len(text)
-        # khối task kết thúc ở heading cấp ≤3 kế tiếp (vd '## Self-Review'), không ăn sang phần khác
-        nxt = re.search(r"^#{1,3} ", text[h.end():end], re.M)
-        block = text[h.start(): h.end() + nxt.start()] if nxt else text[h.start():end]
+        block = text[h.start(): h.end() + _heading_end(text[h.end():end])]
         if n != i + 1:
             errors.append(f"Task {n}: số thứ tự không liên tục (mong đợi {i + 1})")
         files = re.search(r"^\*\*Files:\*\*\s*\n((?:- .+\n?)+)", block, re.M)
@@ -71,6 +101,9 @@ def parse(text):
             errors.append(f"Task {n}: không có cặp 'Run:'/'Expected: … PASS' — task không có đơn vị nghiệm thu")
         consumes = re.search(r"^- Consumes:\s*(.+(?:\n  .+)*)", block, re.M)
         deps = sorted({int(k) for k in re.findall(r"\bTask (\d+)\b", consumes.group(1))} - {n}) if consumes else []
+        bad = [k for k in deps if not 1 <= k < n]
+        if bad:
+            errors.append(f"Task {n}: 'Consumes:' trỏ Task {bad} — chỉ được phụ thuộc task ĐỨNG TRƯỚC (1..{n - 1})")
         # Hạ cấp heading trong khối trích (### → ####) để không chen vào các mục ### của issue form;
         # chữ giữ nguyên văn. Dòng trong code fence không đụng tới.
         quoted, fence = [], False
@@ -96,7 +129,7 @@ def acceptance_md(t):
 
 
 def story_body(plan, t, path, url, epic_no, issue_of):
-    blocked = ", ".join(f"#{issue_of[k]}" for k in t["deps"] if k in issue_of) or "—"
+    blocked = ", ".join(f"#{issue_of.get(k, f'<Task {k}>')}" for k in t["deps"]) or "—"
     return f"""{MARK.format(path=path, task=t['n'])}
 ### Yêu cầu (trích nguyên văn từ tài liệu nguồn)
 
@@ -149,8 +182,12 @@ Epic đóng khi mọi story dưới đây đã đóng (mỗi story có phán quy
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dry = "--dry-run" in sys.argv
+    if "--check-pin" in sys.argv:
+        print(check_pin())
+        return
     if len(args) != 1:
-        sys.exit("Dùng: scripts/plan-to-issues.py <plan.md> [--dry-run]")
+        sys.exit("Dùng: scripts/plan-to-issues.py <plan.md> [--dry-run] | --check-pin")
+    print(check_pin())
     path = args[0]
     if not sh("git", "ls-files", "--", path).strip():
         sys.exit(f"✗ {path} chưa được commit — Issue phải trỏ tới bản plan bất biến (plan@SHA)")
@@ -167,7 +204,9 @@ def main():
     repo = sh("gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner").strip()
     url = f"https://github.com/{repo}/blob/{sha}/{path}"
 
-    existing = json.loads(sh("gh", "issue", "list", "--state", "all", "--limit", "1000", "--json", "number,body"))
+    # Đọc ĐỦ mọi trang (không cắt ở N issue) — thiếu một trang là raise trùng epic/story.
+    existing = [json.loads(l) for l in sh("gh", "api", "--paginate", f"repos/{repo}/issues?state=all&per_page=100",
+                                           "--jq", ".[] | select(.pull_request == null) | {number, body}").splitlines() if l]
     def find(task):
         mk = MARK.format(path=path, task=task)
         hits = [i["number"] for i in existing if mk in (i["body"] or "")]
@@ -208,8 +247,14 @@ def main():
 
     if dry or not epic_no:
         return
-    # Link 2 đường: task-list trong body epic + sub-issue API (đã link thì API trả 422 — bỏ qua)
-    sh("gh", "issue", "edit", str(epic_no), "--body", epic_body(plan, path, url, stories))
+    # Link 2 đường: task-list trong body epic + sub-issue API (đã link thì API trả 422 — bỏ qua).
+    # Body epic KHÔNG viết lại: chỉ NỐI dòng của story chưa có — giữ dấu [x], con thêm tay, ghi chú.
+    body = sh("gh", "issue", "view", str(epic_no), "--json", "body", "-q", ".body")
+    have = {int(x) for x in re.findall(r"^\s*[-*] \[[ xX]\] #(\d+)\b", body, re.M)}
+    missing = [f"- [ ] #{no} Task {n}: {name}" for n, name, no in stories if no not in have]
+    if missing:
+        body = re.sub(r"\n- \(chưa có story\)\s*$", "", body.rstrip("\n")) + "\n" + "\n".join(missing) + "\n"
+        sh("gh", "issue", "edit", str(epic_no), "--body", body)
     for _, _, no in stories:
         iid = sh("gh", "api", f"repos/{repo}/issues/{no}", "-q", ".id").strip()
         sh("gh", "api", "-X", "POST", f"repos/{repo}/issues/{epic_no}/sub_issues", "-F", f"sub_issue_id={iid}", check=False)
