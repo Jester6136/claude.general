@@ -7,6 +7,8 @@ name: check
 # TODO trước khi dùng: điền bước "Cài dependency" đúng ngôn ngữ/gói của project, và điền các lệnh còn
 # TODO trong scripts/check.sh.
 
+# [OPT] LOCAL-FIRST: GitHub giới hạn Actions ⇒ phán quyết nghiệm thu chạy ở MÁY (hook pre-push + post-merge.sh
+# chạy lại trên commit merge). Bật workflow này chỉ khi hạn mức/chính sách cho phép — GIT-FLOW.md G2.
 on:
   push:
     branches: [main]

@@ -16,8 +16,17 @@
 ## 11b. [OPT] Dùng chính GIT làm hệ quản lý tài liệu & công việc
 
 Phương án O7-A đầy đủ: **Issue = kho TODO + nơi KHAI đơn vị nghiệm thu · PR = đơn vị review · phán quyết
-nghiệm thu tất định XANH = chấp nhận · merge = ghi nhận sự chấp nhận đó · CI = cổng máy.** Trạng thái
-sống ở nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown phải nhớ cập nhật bằng tay.
+nghiệm thu tất định XANH = chấp nhận · merge = ghi nhận sự chấp nhận đó · `check.sh` chạy Ở MÁY = cổng
+máy (CI chỉ là [OPT]).** Trạng thái sống ở nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown
+phải nhớ cập nhật bằng tay.
+
+**Local-first — vì sao không dựa vào CI:** GitHub giới hạn GitHub Actions (chính sách/hạn mức), nên phán
+quyết **không được phụ thuộc** vào việc CI có chạy hay không. Phán quyết chạy ở máy, ba lớp, cùng một lệnh
+`check.sh`: (1) agent chạy `--all` + `--acceptance` trước khi mở PR, dán kết quả vào PR; (2) hook `pre-push`
+chạy tên + tĩnh + nghiệm thu (không smoke/test); (3) `post-merge.sh` **chạy lại CHỈ `--acceptance` trên
+chính commit merge** — lớp này không bỏ qua được và quyết định có đóng Issue/epic hay không. `--all`
+(chất lượng: lint/test/smoke) KHÔNG được chạy lại sau merge: bỏ qua lớp (1) là lỗi kỷ luật mà chỉ review
+(G4) bắt được. CI (G2) chỉ bật khi hạn mức cho phép, và nếu bật cũng gọi đúng lệnh đó.
 
 **Điều kiện đảo sang O7-A:** `CLAUDE.md` §11, ngay dưới bảng O (số agent chạy đồng thời, không phải số
 người). `git branch --list 'agent/*'` liệt kê đúng ai đang làm gì tại mọi thời điểm.
@@ -53,7 +62,7 @@ flowchart TB
         I["📋 Issue<br/>BẮT BUỘC nhãn <i>agent-ready</i> hoặc <i>decision-needed</i><br/>= ĐẶC TẢ + ĐƠN VỊ NGHIỆM THU khai trước (N0/N1/N2 + ngưỡng)"]
         B["🌿 Branch/worktree riêng<br/>mỗi Issue một nhánh"]
         P["🔀 PR<br/>= báo cáo của agent, dạng DIFF + phán quyết"]
-        C{"🎯 CI — TẤT ĐỊNH<br/>check.sh --all + --acceptance<br/>= PHÁN QUYẾT nghiệm thu"}
+        C{"🎯 check.sh Ở MÁY — TẤT ĐỊNH<br/>--all + --acceptance (pre-push · trước PR)<br/>= PHÁN QUYẾT nghiệm thu · CI [OPT]"}
         RV["🔎 skill code-review — KHÔNG tất định<br/>BẮT BUỘC chạy, chỉ SINH finding"]
         M["✅ Merge<br/>= ghi nhận phán quyết XANH"]
     end
@@ -164,20 +173,20 @@ sequenceDiagram
     actor N as 👤 Người
     participant G as 🗃️ Git (Issue/PR)
     participant A as 🤖 Agent
-    participant C as ⚙️ CI
+    participant C as ⚙️ check.sh (máy agent)
     participant R as 🔎 skill code-review
 
     N->>G: mở Issue `agent-ready` (kèm đơn vị nghiệm thu + ngưỡng)
     G-->>A: giao việc (brief tự chứa)
     A->>A: viết đơn vị nghiệm thu → thấy ĐỎ trên nhánh nền → code
-    A->>G: mở PR (Closes #NN)
-    G->>C: check.sh --all + --acceptance
-    C-->>A: ĐỎ → agent tự sửa, đẩy lại
+    A->>C: check.sh --all + --acceptance (+ hook pre-push)
+    C-->>A: ĐỎ → agent tự sửa
     Note over A,C: vòng này KHÔNG làm phiền người
-    C-->>G: XANH = phán quyết nghiệm thu
+    C-->>A: XANH = phán quyết nghiệm thu
+    A->>G: mở PR (Closes #NN) + dán kết quả check.sh
     A->>R: chạy /code-review (BẮT BUỘC, ai merge cũng vậy)
     R-->>A: finding
-    A->>G: mỗi finding → test mới (CI chạy lại) HOẶC bác bỏ kèm lý do
+    A->>G: mỗi finding → test mới (chạy lại check.sh) HOẶC bác bỏ kèm lý do
     G-->>N: 🔔 (1) "PR: nghiệm thu XANH, finding đã xử lý"
     alt tự merge
         N->>G: đọc diff → merge
@@ -185,32 +194,35 @@ sequenceDiagram
         N-->>A: trao quyền merge (quyết định của người, mỗi lần hoặc theo constitution.md)
         A->>G: merge
     end
-    G-->>N: 🔔 (2) Issue tự đóng
+    A->>C: post-merge.sh — chạy LẠI nghiệm thu trên commit merge
+    C-->>G: XANH ⇒ đóng Issue/epic, dọn nhánh
+    G-->>N: 🔔 (2) Issue đóng
 
     A--)G: gặp chỗ MƠ HỒ → comment/gán nhãn
     G-->>N: 🔔 (3) "agent bị chặn, cần quyết định"
-    C--)G: pipeline nhánh chính ĐỎ
+    C--)G: nghiệm thu trên commit merge ĐỎ
     G-->>N: 🔔 (4) "hỏng ở nhánh chính"
 ```
 
 | # | Đánh thức khi | Vì sao đáng làm phiền |
 |---|---|---|
 | 1 | Nghiệm thu XANH + mọi finding đã xử lý, chờ merge | Người duyệt các finding bị BÁC BỎ (chỗ duy nhất còn phán đoán) + quyết tự merge hay trao quyền |
-| 2 | Issue tự đóng | Xác nhận vòng đã khép, không cần theo dõi tay |
+| 2 | Issue đóng (GitHub hoặc `post-merge.sh`) | Xác nhận vòng đã khép, không cần theo dõi tay |
 | 3 | **Agent bị chặn / gặp chỗ mơ hồ** | Quan trọng nhất: thà bị đánh thức còn hơn để agent tự suy diễn |
-| 4 | Pipeline nhánh chính đỏ | Hỏng thứ đang chạy — khẩn |
+| 4 | Nghiệm thu trên commit merge ĐỎ (`post-merge.sh` dừng; hoặc CI nhánh chính đỏ nếu bật) | Hỏng thứ đang chạy — khẩn |
 
 ★ Thông báo (1) chỉ nổ khi phán quyết XANH và không còn finding bỏ trống — báo sớm hơn là gọi người tới
 xem một PR còn dở, đúng thứ 4-thời-điểm này cố tránh.
 
-★ **KHÔNG** báo khi: agent đang code · CI đỏ ở nhánh feature (agent tự sửa) · mỗi commit. Báo mọi thứ =
+★ **KHÔNG** báo khi: agent đang code · `check.sh` đỏ ở nhánh feature (agent tự sửa) · mỗi commit. Báo mọi thứ =
 người tắt thông báo = mất luôn cả 4 cái quan trọng.
 
 ### Điều kiện tiên quyết — làm SAI thứ tự là tự chặn đường
-> **`make check` chạy được ở máy → CI chạy được `make check` → RỒI MỚI khoá nhánh + bắt buộc PR.**
+> **`check.sh` chạy được ở máy → hook `pre-push` đã cài → `post-merge.sh` chạy được → RỒI MỚI khoá nhánh
+> + bắt buộc PR.** (CI là bước thêm [OPT], không phải điều kiện.)
 
-Áp nghi lễ PR khi CI chưa chạy thì "merge = đã qua test" chỉ là lời tuyên bố — đúng thứ L5 cấm, và tệ
-hơn không áp vì nó tạo cảm giác an toàn giả.
+Áp nghi lễ PR khi chưa có lệnh nghiệm thu chạy được thì "merge = đã qua test" chỉ là lời tuyên bố — đúng
+thứ L5 cấm, và tệ hơn không áp vì nó tạo cảm giác an toàn giả.
 
 ### Kích hoạt O7-A giữa chừng một project đang chạy O7-B
 
@@ -303,8 +315,11 @@ thấy `HeadlessChrome/157`, viewport 1280×720.
 
 Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, dựng theo
 mục ngay trên; **bản ghim = `PINNED_VERSION` trong `scripts/plan-to-issues.py`** — nguồn duy nhất), lưu ở
-`docs/superpowers/plans/YYYY-MM-DD-<feature>.md`, đi qua PR như mọi tài liệu. **Merge plan vào `main`** ⇒
-workflow `plan-to-issues.yml` gọi `scripts/plan-to-issues.py`:
+`docs/superpowers/plans/YYYY-MM-DD-<feature>.md` (`<feature>` tiếng Anh, `AGENT.md` §9), đi qua PR như mọi tài liệu. **PR chứa plan merge xong** ⇒
+`post-merge.sh` (bước 2b, ở máy, trên commit merge) gọi `scripts/plan-to-issues.py` — không cần CI. Workflow
+`plan-to-issues.yml` là [OPT] thay thế khi có CI: mặc định chỉ chạy tay (và chỉ trên `main`); bật trigger
+`push` thì `post-merge.sh` **tự** bỏ bước 2b (đọc file workflow ở commit merge; `PLANS_VIA_CI=1` ép bỏ qua) —
+**không để hai nơi cùng raise** (đua nhau tạo trùng):
 
 | Plan | Thành | Nội dung |
 |---|---|---|
@@ -335,15 +350,19 @@ lại bộ kiểm. Đó là thay đổi có chủ đích, không trôi ngầm. P
 
 Merge chưa phải điểm cuối: Issue/epic còn mở, nhánh và worktree còn nằm đó thì "đang làm gì" (`gh issue
 list`, `git branch --list 'agent/*'`) bắt đầu nói dối. Đóng vòng bằng **một lệnh tất định**, không bằng trí
-nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước, từ worktree chính). Cổng vào: PR **MERGED** + không
-còn check đang chạy + lần chạy mới nhất của **mọi (workflow, job) SUCCESS** —
-không có check nào cũng là KHÔNG đạt (không có phán quyết thì không có gì để đóng).
+nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước, từ worktree chính). Cổng vào: PR **MERGED** +
+**nghiệm thu chạy LẠI ở máy trên chính commit merge** (worktree tạm, `PR_BODY` = mô tả PR) **XANH**. Không
+cần CI; nếu PR có check CI [OPT] thì không còn check đang chạy và lần mới nhất của mọi (workflow, job) phải
+SUCCESS. Nghiệm thu trên commit merge ĐỎ ⇒ dừng, không đóng gì, báo người (thông báo 4). PR sửa chính cổng
+(`scripts/check.sh`, `post-merge.sh`, `plan-to-issues.py`, hook, `.github/workflows/`) ⇒ phán quyết do cổng đã sửa tự chấm mình ⇒ người đọc diff cổng
+rồi chạy với `GATE_CHANGE_REVIEWED=1`. Danh sách file PR lấy qua REST phân trang (không cắt ở 100 file).
 
 | Thứ | Đóng khi | Ai/cái gì đóng |
 |---|---|---|
-| **Issue** | PR có `Closes #N` merge + nghiệm thu XANH + `acceptance/<N>-*.sh` có trên `origin/<base>` | GitHub tự đóng; script đóng nốt cái bỏ sót, và **MỞ LẠI** Issue cùng repo bị đóng mà không có đơn vị (vd đóng qua commit message/sidebar — CI không thấy) |
-| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/epic/<E>/*.sh` (nếu có) XANH trên `origin/<base>` | Script — con = **chỉ link tường minh**, định danh đủ `owner/repo#N`: sub-issue (đủ mọi trang, kể cả repo khác) ∪ dòng task-list `- [ ] [owner/repo]#N` trong body epic. Con chỉ tự khai ô "Epic" mà chưa link ⇒ cảnh báo, KHÔNG đóng epic |
+| **Issue** | PR có `Closes #N` merge + nghiệm thu XANH + `acceptance/<N>-*.sh` có trên `origin/<base>` | GitHub tự đóng; script đóng nốt cái bỏ sót, và **MỞ LẠI** Issue cùng repo bị đóng mà không có đơn vị (vd đóng qua commit message/sidebar — `PR_BODY` không thấy) |
+| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/epic/<E>/*.sh` (nếu có) XANH trên `origin/<base>` (worktree tạm — không cần checkout gì) | Script — con = **chỉ link tường minh**, định danh đủ `owner/repo#N`: sub-issue (đủ mọi trang, kể cả repo khác) ∪ dòng task-list `- [ ] [owner/repo]#N` trong body epic. Con chỉ tự khai ô "Epic" mà chưa link ⇒ cảnh báo, KHÔNG đóng epic |
 | **Worktree** | Nhánh của nó đã merge, worktree sạch | Script — `git worktree remove` KHÔNG `--force`; còn thay đổi chưa commit thì DỪNG, báo |
+| **Plan** (`docs/superpowers/plans/*.md` PR thêm/sửa) | PR merge | Script — `plan-to-issues.py` trên commit merge raise epic/story (§ "Plan → Epic/Story"); plan đỏ ⇒ script thoát mã 1 nhưng vẫn dọn |
 | **Nhánh local/remote** | Đã xác nhận MERGED (cổng ở trên) và là `agent/*` của chính repo | Script — `branch -D` (squash/rebase làm `-d` từ chối) + `push --delete`. Nhánh khác (`develop`, fork) không bao giờ bị xoá |
 
 **Epic = tổng của các đơn vị nghiệm thu con, cộng (tuỳ chọn) một đơn vị nghiệm thu tích hợp của riêng
@@ -351,12 +370,13 @@ nó.** Epic không có đơn vị riêng thì đóng khi mọi con đã đóng �
 Cần kiểm "các con ghép lại chạy đúng" thì khai trong `acceptance/epic/<E>/` lúc mở epic, cùng luật §4.1 —
 **thư mục riêng, không nằm ở `acceptance/*.sh`**, vì nó sẽ ĐỎ cho tới khi con cuối cùng xong và không được
 chặn PR của các con (`check.sh --acceptance` chỉ quét cấp trên cùng). Script dồn mọi điều kiện tiên quyết
-(MERGED, check, worktree sạch) lên TRƯỚC khi đóng bất cứ thứ gì — dừng giữa chừng thì chưa đổi gì.
+(MERGED, nghiệm thu trên commit merge, CI nếu có, worktree sạch) lên TRƯỚC khi đóng bất cứ thứ gì — dừng giữa chừng thì chưa đổi gì.
 
-[OPT] Bật `delete_branch_on_merge` để GitHub tự xoá nhánh remote (`gh api -X PATCH repos/<o>/<r> -f
+[OPT] Bật `delete_branch_on_merge` để GitHub tự xoá nhánh remote (`gh api -X PATCH repos/<o>/<r> -F
 delete_branch_on_merge=true`) — script vẫn cần cho worktree/nhánh local và epic, những thứ GitHub không
 dọn. *Đo 2026-11-23 trên repo playbook này:* cờ đang `false`, và `--dry-run` cho PR #1 (merge 2026-08-12)
-phát hiện nhánh remote `add-auto-web-research` vẫn còn sau hơn 3 tháng.
+phát hiện nhánh remote `add-auto-web-research` vẫn còn sau hơn 3 tháng. Bật cùng ngày ⇒ PR #2, #3 merge
+xong thì nhánh remote tự mất (`git ls-remote --heads` → 0).
 
 ### Chia việc giữa Issue và Docs — giữ L2 (một loại sự thật, một nhà)
 Thêm Issue mà vẫn giữ bảng TODO trong docs = **hai nguồn sự thật**. Chia theo **tuổi thọ thông tin**:
@@ -371,9 +391,10 @@ Nối hai chiều: Issue trỏ mục doc liên quan; doc ghi bài học kèm s�
 
 ### [OPT] Quy ước tên nhánh cho agent — `agent/<issue-id>-<slug>`
 
-Ví dụ: `agent/42-fix-quota-closure-bug`. Tiền tố `agent/` (hoặc `ai/`, miễn nhất quán) làm hai việc:
+Ví dụ: `agent/42-fix-quota-closure-bug` — slug **tiếng Anh** (`AGENT.md` §9, `check.sh --naming` chặn tên
+nhánh ngoài ASCII). Tiền tố `agent/` (hoặc `ai/`, miễn nhất quán) làm hai việc:
 báo cho reviewer **trước khi mở diff** đây là code máy viết, và cho phép áp **branch-protection riêng**
-cho nhánh agent (vd bắt buộc CI xanh, cấm force-push) khác với nhánh người. Lợi ích đo được:
+cho nhánh agent (vd cấm push thẳng/force-push, bắt buộc PR) khác với nhánh người. Lợi ích đo được:
 `git branch --list 'agent/*'` liệt kê đúng và chỉ đúng mọi nhánh agent đang mở.
 
 ★ Cộng đồng đang chia phe về việc có nên đánh dấu **từng dòng** do agent viết trong `git blame` hay
@@ -384,9 +405,9 @@ nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy tr
 
 | Cổng | Nội dung | Tất định? | Chi phí | Đáng làm khi |
 |---|---|---|---|---|
-| G1 **`check.sh --all` + `--acceptance`** | lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4) | ✅ — **đây là phán quyết** | thấp | luôn luôn |
-| G2 **CI chạy G1** | mỗi push/PR | ✅ | thấp (nếu có runner) | luôn luôn |
-| G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | ✅ | trung bình | sau khi G2 ổn định |
+| G1 **`check.sh --all` + `--acceptance` Ở MÁY** | tên (ASCII) · lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4). Chạy đủ: agent trước PR. Hook `pre-push`: tên + tĩnh + nghiệm thu. `post-merge.sh`: CHỈ nghiệm thu, trên commit merge | ✅ — **đây là phán quyết** | thấp | luôn luôn |
+| G2 **[OPT] CI chạy G1** | mỗi push/PR — lưới thứ hai, KHÔNG thay G1 | ✅ | tốn hạn mức Actions | **[TRIGGER]** chính sách/hạn mức GitHub Actions cho phép, hoặc có runner tự dựng |
+| G3 **Nhánh được bảo vệ** | cấm push thẳng, bắt buộc PR; "required status checks" CHỈ khi có G2 | ✅ | thấp | sau khi G1 chạy được ở máy |
 | G4 **skill `code-review`** (+ Playwright MCP cho UI) | **BẮT BUỘC chạy trước MỌI merge** (chốt 2026-09-13), ai bấm merge cũng vậy. Vai trò: **sinh finding**, KHÔNG phán quyết. Mỗi finding → test tất định (vào G1) hoặc bác bỏ kèm lý do trong PR | ❌ — nên không được chặn trực tiếp | thấp | luôn luôn |
 | G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | ❌ | cao | **[TRIGGER]** ≥2 người thật |
 
@@ -524,8 +545,15 @@ xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng m
   lần chạy gần nhất (`gh run list -L 5`), `check.sh --all` cho `pass=0 fail=0 skip=4` — xanh mà không
   kiểm gì. Vì vậy ở `--acceptance`: đơn vị đã khai mà không chạy được (exit 77) là ĐỎ, PR đóng Issue mà
   thiếu đơn vị là ĐỎ; chỉ "repo chưa có đơn vị nào" là SKIP-kèm-cảnh-báo (`AGENT.md` §4.2).
+- **(5) Cổng chết mà báo thành công.** bash 3.2 (mặc định macOS): script có `trap … EXIT` mà gặp lỗi `set -u`
+  (biến chưa khai báo) **cùng `set -e`** thì thoát mã **0**, với BẤT KỲ EXIT trap nào. Đo 2026-11-23 trên
+  `/bin/bash` 3.2.57: file `t.sh` = `set -eu` / `trap "" EXIT` / `echo "$x"` → `bash t.sh; echo $?` in `0`;
+  bỏ dòng trap → `1`; chỉ `set -u` (không `-e`) → `1`. Lỗi thật: `"$var—"` (dấu `—` dính vào tên biến) làm
+  `post-merge.sh` chết giữa chừng nhưng báo exit 0. Xử lý: không dùng `trap EXIT` trong cổng (chỉ INT/TERM),
+  viết `${var}` khi ngay sau là ký tự không phải ASCII, và kiểm ngược bằng cách cố tình chèn một biến chưa
+  khai báo.
 
-### Khi KHÔNG có runner / KHÔNG đủ quyền — vẫn lấy được phần lớn giá trị
+### [OPT] Khi bật CI / khi KHÔNG đủ quyền — kiểm trước khi tin
 
 **Kiểm CI có chạy thật không** trước khi tin nó: push một workflow tối giản rồi xem tab Actions.
 - **Không có run nào xuất hiện** ⇒ Actions đang tắt cho repo/tổ chức (hoặc `on:` không khớp sự kiện).
@@ -540,17 +568,19 @@ lần. Bài học: *trạng thái của pipeline là dữ liệu chẩn đoán, 
 `gh api repos/<owner>/<repo> --jq .permissions.admin` → `true`/`false`. Kiểm trước khi thiết kế quy trình
 dựa vào khoá nhánh, đừng đợi tới lúc bấm thì gặp 403/404.
 
-**Phương án không cần quyền: git hook `pre-push`** gọi đúng `scripts/check.sh`.
+**Mặc định (local-first): git hook `pre-push`** gọi đúng `scripts/check.sh` (tĩnh + nghiệm thu) — không cần
+quyền, không cần runner, không tốn hạn mức Actions.
 
-| | CI (có runner) | Hook `pre-push` |
+| | CI [OPT] (có runner + hạn mức) | Hook `pre-push` |
 |---|---|---|
 | Bản chất | **cưỡng chế** | **kỷ luật** |
 | Bỏ qua được? | không (nếu khoá nhánh) | có — `--no-verify` |
 | Người mới clone | tự động có | **phải tự chạy** `install-hooks.sh` (git không version `.git/hooks`) |
-| Chạy tầng nào | tĩnh | tĩnh (**cố ý**: push chậm ⇒ người ta `--no-verify` cho xong, cổng mất tác dụng) |
+| Chạy tầng nào | tĩnh + nghiệm thu | tĩnh + nghiệm thu (**không** smoke/test đầy đủ: push chậm ⇒ người ta `--no-verify` cho xong, cổng mất tác dụng) |
 
 ★Nói rõ giới hạn **ngay trong file hook**. Một cổng bị hiểu nhầm là cưỡng chế trong khi thực ra bỏ qua
-được thì còn nguy hơn không có cổng.
+được thì còn nguy hơn không có cổng. Hook bỏ qua được ⇒ lớp không bỏ qua được là `post-merge.sh`: nó chạy
+lại nghiệm thu trên commit merge, ĐỎ thì không đóng gì và báo người.
 
 ### Chi phí thật, nói trước
 Thay đổi đắt nhất **không phải công cụ** mà là **thói quen nhánh**: từ nhánh cá nhân dài hạn

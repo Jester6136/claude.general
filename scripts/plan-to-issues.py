@@ -50,7 +50,9 @@ def check_pin():
         sys.exit(f"✗ không đọc được {INSTALLED} ({e}) — sửa/xoá file đó rồi chạy lại")
     # Chỉ bản ÁP VÀO repo này, theo thứ tự ưu tiên của Claude Code: project/local của đúng thư mục repo
     # này che bản scope user. Bản cài cho repo khác không tính.
-    root = os.path.realpath(sh("git", "rev-parse", "--show-toplevel").strip())
+    # post-merge.sh chạy script trong worktree TẠM ⇒ truyền gốc repo thật qua PLAN_TO_ISSUES_REPO_ROOT.
+    root = os.path.realpath(os.environ.get("PLAN_TO_ISSUES_REPO_ROOT")
+                            or sh("git", "rev-parse", "--show-toplevel").strip())
     mine = [e for e in entries if e.get("scope") in ("project", "local")
             and os.path.realpath(e.get("projectPath") or "/nonexistent") == root]
     entries = mine or [e for e in entries if e.get("scope") == "user"]
