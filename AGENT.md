@@ -8,7 +8,7 @@
 > bootstrap ở `CLAUDE.md` §0.5.
 
 **Mục lục:** §1 ranh giới hành động · §2 trước khi đổi hạ tầng/bảo mật · §3 ghi issue — một nguồn sự
-thật · **§4 test & NGHIỆM THU TẤT ĐỊNH (N0/N1/N2)** · §5 commit/push · **§6 bằng chứng trước khi tuyên
+thật · **§4 test & NGHIỆM THU TẤT ĐỊNH (N0/N1/N2 · UI qua Playwright)** · §5 commit/push · **§6 bằng chứng trước khi tuyên
 bố (tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A) ·
 **§8 research web (học thuật + industry) — TỰ ĐỘNG trước khi chốt phương án/root-cause khó**.
 
@@ -72,6 +72,8 @@ Thứ KHÔNG BAO GIỜ được làm phán quyết nghiệm thu, vì chạy lạ
 - LLM-as-judge chạy sống (mẫu số do chính judge quyết — `CLAUDE.md` §6.3);
 - reviewer bằng LLM (skill `/code-review`) — nó **sinh finding**, không **ra phán quyết** (xem `GIT-FLOW.md`
   § "Năm cổng", G4);
+- agent tự lái trình duyệt qua **Playwright MCP** để "check giao diện" — cũng là LLM điều khiển, cũng chỉ
+  **sinh finding** (§4.4);
 - "nhìn output thấy ổn" của người — đó là review, không phải nghiệm thu.
 
 **Ba cấp nghiệm thu** — phân theo vị trí của thứ không tất định, không theo độ quan trọng:
@@ -137,6 +139,22 @@ oan vì thiếu hạ tầng, tưởng nhầm là lỗi code.
 code đổi có chủ đích, test không cập nhật theo, rồi im lặng đỏ hàng tháng không ai biết vì không ai
 chạy nó. Không phải "test tệ", mà là "test không nằm trong vòng lặp nào cả". Gắn vào `check.sh`/CI ngay
 khi viết test đầu tiên, đừng để dồn.
+
+### 4.4 Giao diện — Playwright MCP để NHÌN, Playwright test để PHÁN QUYẾT
+
+`.mcp.json` khai Playwright MCP (`@playwright/mcp` 0.0.84 + cả cây phụ thuộc khoá bằng
+`tools/playwright-mcp/package-lock.json`, Chromium ghim theo `playwright-core` đó, `--headless --isolated
+--viewport-size 1280x720`). Agent dùng nó để **xem** UI và **sinh finding**, như `/code-review`. Mỗi finding
+về giao diện → một test Playwright dạng script (cùng `playwright-core` đã khoá, viewport cố định, tắt
+animation, dữ liệu/đồng hồ cố định, backend fake/replay) đặt trong đơn vị nghiệm thu — **đó** mới là phán
+quyết. So ảnh chụp: ảnh baseline là snapshot đóng băng (luật N2: chụp lại baseline = lần nghiệm thu mới,
+ngưỡng sai khác khai trước).
+
+★ Vì sao phải ghim trình duyệt, đo 2026-11-23 trên máy này: Chrome hệ thống `157.0.8103.80`, Chromium do
+`playwright-core` ghim `157.0.8103.15` — đã lệch patch dù cùng ngày. Dùng Chrome hệ thống (mặc định của
+MCP, và `npx @playwright/mcp@latest` của plugin `playwright` chính thức) thì UI "đúng" trôi theo mỗi lần
+Chrome tự cập nhật. Cài: `npm ci --prefix tools/playwright-mcp && node
+tools/playwright-mcp/node_modules/playwright-core/cli.js install chromium`.
 
 ## 5. Commit / Push
 

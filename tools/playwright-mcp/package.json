@@ -1,0 +1,8 @@
+{
+  "name": "playwright-mcp-pinned",
+  "private": true,
+  "description": "Ghim @playwright/mcp + TOÀN BỘ cây phụ thuộc (package-lock.json) cho .mcp.json — xem README.md § Playwright MCP",
+  "dependencies": {
+    "@playwright/mcp": "0.0.84"
+  }
+}

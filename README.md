@@ -16,6 +16,9 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 | `.github/PULL_REQUEST_TEMPLATE.md` | Checklist bằng chứng trước khi mở PR. |
 | `.github/workflows/check.yml` | CI gọi `scripts/check.sh --all` — điền TODO theo ngôn ngữ project. |
 | `scripts/check.sh` | Cổng chất lượng — khung 4 bước (syntax/boundary/lint/test), điền TODO · `--acceptance` chạy mọi đơn vị nghiệm thu tất định `acceptance/*.sh` (skip/flaky = ĐỎ, `AGENT.md` §4). Máy dev VÀ CI gọi CÙNG script này. |
+| `scripts/plan-to-issues.py` + `.github/workflows/plan-to-issues.yml` | Plan (superpowers `writing-plans`, ghim 7.0.2-22f0b463e7a5) merge vào `main` → 1 epic + N story `agent-ready`, mỗi story mang sẵn đơn vị nghiệm thu từ các cặp `Run:`/`Expected:`. Plan sai định dạng → từ chối, không tạo gì. |
+| `.claude/settings.json` | Bật plugin `superpowers@anthropic-plugin-directory` (scope project) — ai mở repo bằng Claude Code cũng có cùng bộ skill. |
+| `.mcp.json` + `tools/playwright-mcp/` | Playwright MCP để agent **xem** giao diện (sinh finding, không phán quyết — `AGENT.md` §4.4). Ghim `@playwright/mcp` 0.0.84 + toàn bộ cây phụ thuộc (`package-lock.json`) + Chromium theo `playwright-core`. |
 | `scripts/post-merge.sh` | Đóng vòng sau merge: chỉ chạy khi PR MERGED + mọi check SUCCESS → đóng Issue/epic, dọn worktree + nhánh local/remote. Có `--dry-run`. |
 | `scripts/install-hooks.sh` + `scripts/hooks/pre-push` | Cổng kỷ luật ở máy dev (git không version `.git/hooks`, phải tự cài). |
 
@@ -30,7 +33,9 @@ mkdir -p <repo-mới>/docs
 cp claude.general/templates/*.md <repo-mới>/docs/
 cp -r claude.general/.github <repo-mới>/
 cp -r claude.general/scripts <repo-mới>/
+cp -r claude.general/.claude claude.general/.mcp.json claude.general/tools <repo-mới>/   # superpowers + Playwright MCP
 cd <repo-mới> && ./scripts/install-hooks.sh
+npm ci --prefix tools/playwright-mcp && node tools/playwright-mcp/node_modules/playwright-core/cli.js install chromium
 ```
 
 2. **Thay mọi `<PROJ>`/`<...>`** trong các file vừa copy bằng tên/thông tin project thật.

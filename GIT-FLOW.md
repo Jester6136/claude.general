@@ -247,6 +247,29 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    ở file A không tự cập nhật khi test được sửa ở file B) — quét bằng cách tìm mọi chỗ trích dẫn cùng
    con số/đường dẫn vừa đổi, không chỉ sửa nơi trực tiếp liên quan đến thay đổi.
 
+### Plan → Epic/Story — raise việc từ plan bằng máy
+
+Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, cài
+scope project trong `.claude/settings.json`, **ghim `7.0.2-22f0b463e7a5`**), lưu ở
+`docs/superpowers/plans/YYYY-MM-DD-<feature>.md`, đi qua PR như mọi tài liệu. **Merge plan vào `main`** ⇒
+workflow `plan-to-issues.yml` gọi `scripts/plan-to-issues.py`:
+
+| Plan | Thành | Nội dung |
+|---|---|---|
+| cả file | 1 Issue nhãn `epic` | link `plan@SHA` (bất biến), Goal, task-list `- [ ] #N` các story |
+| mỗi `### Task N:` | 1 Issue nhãn `agent-ready` | đúng các mục của `agent-ready.yml`: khối task trích nguyên văn · Files · cấp N0 · **đơn vị nghiệm thu = các cặp `Run:`/`Expected:`** (FAIL = phải đỏ trên nhánh nền, PASS = phán quyết) · Epic · Blocked by (từ `Consumes: … Task k`) |
+
+Story được link vào epic hai đường (sub-issue + task-list) — `post-merge.sh` đóng epic khi story cuối
+xong. **Từ chối thay vì đoán:** plan thiếu H1/Goal/`**Files:**`, hoặc task không có cặp `Expected: … PASS`
+(= task không có đơn vị nghiệm thu) ⇒ job đỏ, **không tạo Issue nào**; plan còn thay đổi chưa commit ⇒ từ
+chối. Chạy lại an toàn (marker ẩn — Issue đã raise thì bỏ qua). Chạy tay: `scripts/plan-to-issues.py
+<plan> --dry-run`.
+
+★ **Vì sao ghim plugin và bám bản ĐÃ CÀI:** parser được viết theo `SKILL.md` của bản cài
+(`~/.claude/plugins/cache/anthropic-plugin-directory/superpowers/7.0.2-22f0b463e7a5/`), không theo nhánh
+`main` trên GitHub — nhánh `main` đổi bất kỳ lúc nào; bản ghim thì không. Nâng phiên bản plugin = đối chiếu
+lại `SKILL.md`, sửa `PINNED_*` trong script, chạy lại bộ kiểm — một thay đổi có chủ đích, không trôi ngầm.
+
 ### Sau merge — đóng vòng (Issue · Epic · nhánh · worktree)
 
 Merge chưa phải điểm cuối: Issue/epic còn mở, nhánh và worktree còn nằm đó thì "đang làm gì" (`gh issue
@@ -302,7 +325,7 @@ nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy tr
 | G1 **`check.sh --all` + `--acceptance`** | lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4) | ✅ — **đây là phán quyết** | thấp | luôn luôn |
 | G2 **CI chạy G1** | mỗi push/MR | ✅ | thấp (nếu có runner) | luôn luôn |
 | G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | ✅ | trung bình | sau khi G2 ổn định |
-| G4 **skill `code-review`** | **BẮT BUỘC chạy trước MỌI merge** (chốt 2026-09-13), ai bấm merge cũng vậy. Vai trò: **sinh finding**, KHÔNG phán quyết. Mỗi finding → test tất định (vào G1) hoặc bác bỏ kèm lý do trong PR | ❌ — nên không được chặn trực tiếp | thấp | luôn luôn |
+| G4 **skill `code-review`** (+ Playwright MCP cho UI) | **BẮT BUỘC chạy trước MỌI merge** (chốt 2026-09-13), ai bấm merge cũng vậy. Vai trò: **sinh finding**, KHÔNG phán quyết. Mỗi finding → test tất định (vào G1) hoặc bác bỏ kèm lý do trong PR | ❌ — nên không được chặn trực tiếp | thấp | luôn luôn |
 | G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | ❌ | cao | **[TRIGGER]** ≥2 người thật |
 
 ★ **Vì sao G4 không được làm cổng chặn trực tiếp:** chạy `/code-review` hai lần trên CÙNG diff có thể ra
