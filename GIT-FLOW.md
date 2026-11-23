@@ -98,7 +98,7 @@ flowchart TB
     H3 -->|"tự merge"| M
     H3 -.->|"trao quyền"| A5
     A5 --> M
-    M -->|"Closes #NN → tự đóng"| I
+    M -->|"post-merge.sh: đóng Issue + EPIC<br/>dọn worktree/nhánh"| I
     M -->|"cập nhật trạng thái"| D4
     M -->|"bài học đáng nhớ"| D2
 
@@ -228,7 +228,7 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    "adr-log\.md"` trên toàn repo, sửa **mọi** file trỏ tới đường dẫn cũ — không chỉ file gọi trực tiếp.
 4. **Dựng scaffolding trước khi mở Issue đầu tiên:** `.github/ISSUE_TEMPLATE/{agent-ready,decision-
    needed}.yml` + `PULL_REQUEST_TEMPLATE.md` (mẫu ở `templates/`/`.github/` cạnh file này). Tạo label
-   `agent-ready`/`decision-needed` nếu repo chưa có (`gh label create`) — `gh issue create --label` báo
+   `agent-ready`/`decision-needed`/`epic` nếu repo chưa có (`gh label create`) — `gh issue create --label` báo
    lỗi nếu label chưa tồn tại.
 5. **Migrate JIT (just-in-time) cho việc CHƯA làm, không dump toàn bộ backlog.** Một mục `§TODO` chưa
    đóng chỉ được viết thành Issue thật khi điền đủ các trường bắt buộc của `agent-ready.yml` (kể cả đơn vị
@@ -246,6 +246,29 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    thời rà các số liệu liên quan đã đổi cùng thời điểm nhưng nằm ở file khác (vd một bảng đếm số test-đỏ
    ở file A không tự cập nhật khi test được sửa ở file B) — quét bằng cách tìm mọi chỗ trích dẫn cùng
    con số/đường dẫn vừa đổi, không chỉ sửa nơi trực tiếp liên quan đến thay đổi.
+
+### Sau merge — đóng vòng (Issue · Epic · nhánh · worktree)
+
+Merge chưa phải điểm cuối: Issue/epic còn mở, nhánh và worktree còn nằm đó thì "đang làm gì" (`gh issue
+list`, `git branch --list 'agent/*'`) bắt đầu nói dối. Đóng vòng bằng **một lệnh tất định**, không bằng trí
+nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước). Cổng vào: PR **MERGED** + **mọi check SUCCESS** —
+không có check nào cũng là KHÔNG đạt (không có phán quyết thì không có gì để đóng).
+
+| Thứ | Đóng khi | Ai/cái gì đóng |
+|---|---|---|
+| **Issue** | PR có `Closes #N` merge + nghiệm thu XANH | GitHub tự đóng; script đóng nốt cái GitHub bỏ sót (liên-repo, `Closes` trong commit) |
+| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/<epic>-*.sh` (nếu có) XANH trên HEAD hiện tại | Script — con lấy từ sub-issue của GitHub ∪ `#N` trong body epic |
+| **Worktree** | Nhánh của nó đã merge, worktree sạch | Script — `git worktree remove` KHÔNG `--force`; còn thay đổi chưa commit thì DỪNG, báo |
+| **Nhánh local/remote** | Đã xác nhận MERGED (cổng ở trên) | Script — `branch -D` (squash/rebase làm `-d` từ chối) + `push --delete` |
+
+**Epic = tổng của các đơn vị nghiệm thu con, cộng (tuỳ chọn) một đơn vị nghiệm thu tích hợp của riêng
+nó.** Epic không có đơn vị riêng thì đóng khi mọi con đã đóng — mỗi con đã có phán quyết tất định của nó.
+Cần kiểm "các con ghép lại chạy đúng" thì khai `acceptance/<epic>-*.sh` lúc mở epic, cùng luật §4.1.
+
+[OPT] Bật `delete_branch_on_merge` để GitHub tự xoá nhánh remote (`gh api -X PATCH repos/<o>/<r> -f
+delete_branch_on_merge=true`) — script vẫn cần cho worktree/nhánh local và epic, những thứ GitHub không
+dọn. *Đo 2026-11-23 trên repo playbook này:* cờ đang `false`, và `--dry-run` cho PR #1 (merge 2026-08-12)
+phát hiện nhánh remote `add-auto-web-research` vẫn còn sau hơn 3 tháng.
 
 ### Chia việc giữa Issue và Docs — giữ L2 (một loại sự thật, một nhà)
 Thêm Issue mà vẫn giữ bảng TODO trong docs = **hai nguồn sự thật**. Chia theo **tuổi thọ thông tin**:

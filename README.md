@@ -16,6 +16,7 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 | `.github/PULL_REQUEST_TEMPLATE.md` | Checklist bằng chứng trước khi mở PR. |
 | `.github/workflows/check.yml` | CI gọi `scripts/check.sh --all` — điền TODO theo ngôn ngữ project. |
 | `scripts/check.sh` | Cổng chất lượng — khung 4 bước (syntax/boundary/lint/test), điền TODO · `--acceptance` chạy mọi đơn vị nghiệm thu tất định `acceptance/*.sh` (skip/flaky = ĐỎ, `AGENT.md` §4). Máy dev VÀ CI gọi CÙNG script này. |
+| `scripts/post-merge.sh` | Đóng vòng sau merge: chỉ chạy khi PR MERGED + mọi check SUCCESS → đóng Issue/epic, dọn worktree + nhánh local/remote. Có `--dry-run`. |
 | `scripts/install-hooks.sh` + `scripts/hooks/pre-push` | Cổng kỷ luật ở máy dev (git không version `.git/hooks`, phải tự cài). |
 
 ## Bootstrap một project mới — 1 ngày (Sprint 0, `CLAUDE.md` §10)

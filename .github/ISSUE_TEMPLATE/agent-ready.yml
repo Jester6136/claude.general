@@ -51,6 +51,11 @@ body:
       label: "Phạm vi KHÔNG được đụng vào"
       description: "Giới hạn bán kính thiệt hại — càng cụ thể càng tốt."
   - type: input
+    id: epic
+    attributes:
+      label: "Epic (nếu Issue này là một phần của epic)"
+      description: "#N của Issue nhãn `epic`. Thêm Issue này làm sub-issue của epic (hoặc ghi `- [ ] #<số Issue này>` trong body epic) — scripts/post-merge.sh đóng epic khi mọi con đã đóng (GIT-FLOW.md § 'Sau merge — đóng vòng')."
+  - type: input
     id: blocked_by
     attributes:
       label: "Blocked by (Issue/PR nào phải xong trước, nếu có)"

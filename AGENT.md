@@ -190,11 +190,12 @@ chỉ là checklist thao tác:
    sửa finding), không chạy lại toàn diff — review không tất định, chạy lại toàn bộ thì finding mới sinh
    mãi. Lượt delta sạch hoặc mọi finding của nó đã xử lý ⇒ xong.
 7. Merge — người bấm, hoặc agent **CHỈ khi** được trao quyền (`constitution.md`).
-8. Sau merge, cùng lượt: đóng Issue (nếu `Closes` không tự đóng, vd liên-repo) · `git worktree remove
-   .worktrees/<slug>` + xoá nhánh `agent/*` — squash/rebase merge thì `git branch -d` từ chối, dùng
-   `git branch -D` SAU KHI xác nhận PR đã merged (`gh pr view <N> --json state`), nhánh remote xoá bằng
-   `gh pr merge --delete-branch` (để `git branch --list 'agent/*'` vẫn đúng là "đang làm") ·
-   cập nhật `HANDOFF.md`.
+8. **Đóng vòng — BẮT BUỘC ngay sau merge:** `./scripts/post-merge.sh <PR> --dry-run` → đọc → chạy thật
+   `./scripts/post-merge.sh <PR>`. Script chỉ làm khi PR **MERGED và mọi check SUCCESS** (gồm nghiệm thu),
+   rồi theo thứ tự: đóng Issue mà PR đóng (nếu GitHub chưa tự đóng) → đóng **epic** khi mọi Issue con đã
+   đóng và nghiệm thu riêng của epic XANH → `git worktree remove` (không `--force`) → `git branch -D` →
+   xoá nhánh remote → `fetch --prune`. Chi tiết: `GIT-FLOW.md` § "Sau merge — đóng vòng". Cuối cùng
+   cập nhật `HANDOFF.md`. Không đóng vòng ⇒ `git branch --list 'agent/*'` thôi còn đúng là "đang làm".
 
 Nếu chưa chọn O7-A (đang dùng O7-B — sửa thẳng, ADR khi đảo quyết định): bỏ qua §7, dùng §3 (roadmap
 §TODO) làm nguồn việc-đang-mở.

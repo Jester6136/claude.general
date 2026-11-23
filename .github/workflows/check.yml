@@ -15,6 +15,11 @@ on:
     # edited: thêm `Closes #N` vào mô tả PR sau khi CI đã xanh vẫn phải chạy lại kiểm đơn vị nghiệm thu.
     types: [opened, synchronize, reopened, edited]
 
+# `edited` làm mỗi lần sửa mô tả PR chạy lại — huỷ run cũ cùng PR để status hiển thị luôn là run mới nhất.
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
     name: check.sh --all

@@ -84,25 +84,26 @@ run_tests() {
 # ── Nghiệm thu TẤT ĐỊNH (AGENT.md §4) — chạy riêng bằng --acceptance ─────────
 # Mỗi đơn vị = một file acceptance/<issue-id>-<slug>.sh. Exit 0 = ĐẠT · 77 = không chạy được (thiếu dữ
 # liệu/hạ tầng) · khác = KHÔNG ĐẠT. KHÁC các bước trên: SKIP (77) tính là ĐỎ — một đơn vị nghiệm thu đã
-# khai mà không chạy được thì chưa nghiệm thu. Mỗi đơn vị chạy 2 lần; exit code lệch = FLAKY = ĐỎ (không
+# khai mà không chạy được thì chưa nghiệm thu. Mỗi đơn vị chạy 2 lần; PHÁN QUYẾT lệch = FLAKY = ĐỎ (không
 # tất định thì không được làm phán quyết; 2 lần chỉ bắt lệch THÔ, không chứng minh tất định).
 # Không có đơn vị nào = SKIP (hiện cảnh báo, không đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
-# Issue BẮT BUỘC có đơn vị (thiếu acceptance/<N>-*.sh = ĐỎ — ép bằng máy, CLAUDE.md L7), lấy từ:
-#   (a) ACCEPTANCE_REQUIRED_IDS="42 43" nếu được set — ghi đè hoàn toàn (a)+(b)+(c);
-#   (b) PR_BODY (CI truyền vào): từ khoá đóng của GitHub `Closes/Fixes/Resolves[:] #N`;
-#   (c) tên nhánh `agent/<N>-<slug>` (GITHUB_HEAD_REF ở CI, nhánh hiện tại ở máy dev) — để máy dev và CI
-#       cho CÙNG phán quyết.
+# Issue BẮT BUỘC có đơn vị (thiếu acceptance/<N>-*.sh = ĐỎ — ép bằng máy, CLAUDE.md L7). Lấy từ ĐÚNG MỘT nguồn:
+#   (a) ACCEPTANCE_REQUIRED_IDS="42 43" nếu KHÁC RỖNG — ghi đè (b)/(c);
+#   (b) ở CI (PR_BODY được truyền, kể cả rỗng): CHỈ từ khoá đóng của GitHub `Closes/Fixes/Resolves[:] #N`
+#       — PR chỉ `Refs #42` thì không bị đòi, dù nhánh tên agent/42-*;
+#   (c) ở máy dev (không có PR_BODY): tên nhánh `agent/<N>-<slug>` — xấp xỉ (b), KHỚP CI khi PR của nhánh
+#       đóng đúng #N. Khác nhau (vd PR đóng #43 từ agent/42-*) thì CI là phán quyết.
 # KHÔNG bắt được: đóng Issue qua URL đầy đủ, qua sidebar "Development", qua từ khoá trong commit message.
 # N2: đơn vị chỉ CHẤM LẠI snapshot đã đóng băng — KHÔNG gọi model sống ở đây (đó là tầng B).
 acceptance_ids() {
-  if [ -n "${ACCEPTANCE_REQUIRED_IDS+x}" ]; then echo "$ACCEPTANCE_REQUIRED_IDS"; return 0; fi
-  local branch="${GITHUB_HEAD_REF:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)}"
-  {
-    printf '%s\n' "${PR_BODY:-}" \
+  if [ -n "${ACCEPTANCE_REQUIRED_IDS:-}" ]; then echo "$ACCEPTANCE_REQUIRED_IDS"; return 0; fi
+  if [ -n "${PR_BODY+x}" ]; then
+    printf '%s\n' "$PR_BODY" \
       | grep -oiE '(^|[^[:alnum:]_])(close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' \
-      | grep -oE '#[0-9]+' | tr -d '#' || true
-    printf '%s\n' "$branch" | sed -nE 's#^agent/([0-9]+)-.*#\1#p' || true
-  } | sort -u | tr '\n' ' ' || true
+      | grep -oE '#[0-9]+' | tr -d '#' | sort -u | tr '\n' ' ' || true
+  else
+    git rev-parse --abbrev-ref HEAD 2>/dev/null | sed -nE 's#^agent/([0-9]+)-.*#\1#p' || true
+  fi
 }
 verdict_of() { case "$1" in 0) echo ĐẠT ;; 77) echo KHÔNG-CHẠY ;; *) echo KHÔNG-ĐẠT ;; esac; }
 run_acceptance() {
@@ -110,8 +111,12 @@ run_acceptance() {
   echo "Nghiệm thu tất định (acceptance/*.sh, mỗi đơn vị chạy 2 lần)"
   local dir="${ACCEPTANCE_DIR:-acceptance}" unit rc1 rc2 v1 v2 id n=0
   local ids; ids="$(acceptance_ids)"
-  [ -n "${ids// /}" ] && echo "  · Issue bắt buộc có đơn vị nghiệm thu: $ids"
-  for id in $ids; do
+  echo "  · Issue bắt buộc có đơn vị nghiệm thu: ${ids:-(không có)}"
+  local -a id_list=(); read -ra id_list <<<"$ids" || true   # read -ra: tách theo khoảng trắng, KHÔNG glob
+  for id in ${id_list[@]+"${id_list[@]}"}; do
+    if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+      fail "ID Issue không hợp lệ '$id' (chỉ nhận số, vd ACCEPTANCE_REQUIRED_IDS=\"42 43\")"; continue
+    fi
     if compgen -G "$dir/$id-*.sh" >/dev/null; then
       pass "Issue #$id có đơn vị nghiệm thu"
     else
