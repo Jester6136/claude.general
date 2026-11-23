@@ -39,14 +39,21 @@ INSTALLED = os.path.expanduser("~/.claude/plugins/installed_plugins.json")
 def check_pin():
     """`.claude/settings.json` chỉ BẬT plugin, KHÔNG ghim phiên bản — bản cài nằm ở user-level
     (~/.claude/plugins/installed_plugins.json). Nên ghim được ép ở đây: máy có cài mà lệch PINNED_VERSION ⇒
-    từ chối (plan có thể theo định dạng khác). Máy không cài (CI) ⇒ chỉ áp định dạng của PINNED_VERSION."""
+    từ chối (plan có thể theo định dạng khác). Repo này không cài (CI, máy chưa bật) ⇒ chỉ áp định dạng của
+    PINNED_VERSION. Bản cài cho repo KHÁC không tính."""
     try:
         entries = json.load(open(INSTALLED)).get("plugins", {}).get(PINNED_PLUGIN, [])
     except FileNotFoundError:
-        return f"(máy này không cài {PINNED_PLUGIN} — chỉ kiểm định dạng theo {PINNED_VERSION})"
+        entries = []
+    # Chỉ bản ÁP VÀO repo này: scope user, hoặc scope project/local của đúng thư mục repo này.
+    root = os.path.realpath(sh("git", "rev-parse", "--show-toplevel").strip())
+    entries = [e for e in entries if e.get("scope") == "user"
+               or os.path.realpath(e.get("projectPath") or "/nonexistent") == root]
+    if not entries:
+        return f"(repo này không cài {PINNED_PLUGIN} — chỉ kiểm định dạng theo {PINNED_VERSION})"
     versions = sorted({e.get("version") for e in entries})
     if versions != [PINNED_VERSION]:
-        sys.exit(f"✗ {PINNED_PLUGIN} đang cài {versions or 'KHÔNG CÓ'} ≠ ghim {PINNED_VERSION}. Cài đúng bản ghim, "
+        sys.exit(f"✗ {PINNED_PLUGIN} đang cài cho repo này {versions} ≠ ghim {PINNED_VERSION}. Cài đúng bản ghim, "
                  f"hoặc nâng ghim có chủ đích (GIT-FLOW.md § \"Plan → Epic/Story\").")
     return f"✓ {PINNED_PLUGIN} đã cài đúng bản ghim {PINNED_VERSION}"
 

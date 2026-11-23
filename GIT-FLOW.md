@@ -247,10 +247,61 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    ở file A không tự cập nhật khi test được sửa ở file B) — quét bằng cách tìm mọi chỗ trích dẫn cùng
    con số/đường dẫn vừa đổi, không chỉ sửa nơi trực tiếp liên quan đến thay đổi.
 
+### Bộ công cụ agent khi dựng O7-A — superpowers (viết plan) + Playwright MCP (xem giao diện)
+
+**Áp ở project dùng playbook này, không phải ở repo playbook.** Cả hai đều phải **ghim phiên bản**. Không
+dùng `@latest`, không dùng nhánh `main` của GitHub: thứ trôi theo upstream thì không cho phán quyết tất
+định (AGENT.md §4.1).
+
+**[TRIGGER] superpowers:** bật khi project bắt đầu viết plan nhiều task cho agent (đi kèm "Plan →
+Epic/Story" ngay dưới đây).
+
+```bash
+claude plugin install superpowers@anthropic-plugin-directory --scope project   # ghi .claude/settings.json
+python3 scripts/plan-to-issues.py --check-pin    # bản cài phải == PINNED_VERSION, lệch ⇒ đỏ
+```
+
+`.claude/settings.json` (commit) chỉ **bật** plugin cho mọi người mở repo; nó **không** ghim phiên bản. Bản
+cài nằm ở user-level `~/.claude/plugins/installed_plugins.json`, nên phần ghim được ép bằng `--check-pin`
+(xem ★ ở mục dưới). `plugin install` **không chọn được phiên bản**, nó cài bản hiện hành của directory.
+Bản đó khác `PINNED_VERSION` ⇒ `--check-pin` đỏ. Khi đó **không** sửa cho xanh: nâng ghim có chủ đích theo
+★ ở mục dưới (đọc toàn văn `SKILL.md` mới, cập nhật parser + `PINNED_*`, chạy lại bộ kiểm) qua một PR riêng.
+
+**[TRIGGER] Playwright MCP:** bật khi project có giao diện người dùng mà agent cần **nhìn** để sinh finding
+(vai trò ở AGENT.md §4.4: MCP để nhìn, test Playwright để phán quyết). Ghim ba lớp: gói MCP, toàn bộ cây phụ
+thuộc, và trình duyệt.
+
+`tools/playwright-mcp/package.json` (commit kèm `package-lock.json` để khoá cả cây phụ thuộc):
+
+```json
+{ "name": "playwright-mcp-pinned", "private": true, "dependencies": { "@playwright/mcp": "0.0.84" } }
+```
+
+`.mcp.json` gọi bản đã khoá, **không** gọi `npx @playwright/mcp@latest`:
+
+```json
+{ "mcpServers": { "playwright": { "command": "node", "args": [
+  "tools/playwright-mcp/node_modules/@playwright/mcp/cli.js",
+  "--browser", "chromium", "--headless", "--isolated", "--viewport-size", "1280x720" ] } } }
+```
+
+```bash
+npm install --prefix tools/playwright-mcp     # lần đầu: sinh package-lock.json → commit
+npm ci --prefix tools/playwright-mcp          # mọi máy sau: cài ĐÚNG theo lockfile
+node tools/playwright-mcp/node_modules/playwright-core/cli.js install chromium   # Chromium do playwright-core ghim
+echo 'tools/playwright-mcp/node_modules/' >> .gitignore; echo '.playwright-mcp/' >> .gitignore
+```
+
+★ `--browser chromium` là bắt buộc. Không có nó, MCP dùng Chrome hệ thống, mà Chrome tự cập nhật. Số đo
+2026-11-23: Chrome hệ thống `157.0.8103.80`, Chromium do `playwright-core` của `0.0.84` ghim
+`157.0.8103.15`, tức đã lệch patch ngay trong cùng ngày. Plugin `playwright` chính thức chạy
+`npx @playwright/mcp@latest` nên không đạt yêu cầu ghim. Kiểm đã sống: handshake MCP trả 25 tool; mở trang
+thấy `HeadlessChrome/157`, viewport 1280×720.
+
 ### Plan → Epic/Story — raise việc từ plan bằng máy
 
-Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, bật ở
-`.claude/settings.json`; **bản ghim = `PINNED_VERSION` trong `scripts/plan-to-issues.py`** — nguồn duy nhất), lưu ở
+Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, dựng theo
+mục ngay trên; **bản ghim = `PINNED_VERSION` trong `scripts/plan-to-issues.py`** — nguồn duy nhất), lưu ở
 `docs/superpowers/plans/YYYY-MM-DD-<feature>.md`, đi qua PR như mọi tài liệu. **Merge plan vào `main`** ⇒
 workflow `plan-to-issues.yml` gọi `scripts/plan-to-issues.py`:
 
@@ -274,7 +325,8 @@ qua; body epic chỉ được **nối** dòng story còn thiếu, không viết 
 ⇒ ghim được **ép bằng máy**: `scripts/plan-to-issues.py --check-pin` (cũng tự chạy mỗi lần raise) — máy
 có cài mà lệch `PINNED_VERSION` ⇒ từ chối; CI không cài plugin ⇒ chỉ áp định dạng của bản ghim. Chạy
 `--check-pin` sau khi cài/cập nhật plugin. Nâng phiên bản = đối chiếu lại `SKILL.md`, sửa `PINNED_*`, chạy
-lại bộ kiểm — thay đổi có chủ đích, không trôi ngầm.
+lại bộ kiểm. Đó là thay đổi có chủ đích, không trôi ngầm. Phiên bản mà parser hiện bám đã đọc toàn văn
+`SKILL.md` của bản cài 2026-11-23, và bản đó trùng khớp `main` trên GitHub cùng ngày (diff rỗng, 204 dòng).
 
 ### Sau merge — đóng vòng (Issue · Epic · nhánh · worktree)
 

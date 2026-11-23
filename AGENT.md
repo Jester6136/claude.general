@@ -142,19 +142,12 @@ khi viết test đầu tiên, đừng để dồn.
 
 ### 4.4 Giao diện — Playwright MCP để NHÌN, Playwright test để PHÁN QUYẾT
 
-`.mcp.json` khai Playwright MCP (`@playwright/mcp` ở phiên bản ghi trong `tools/playwright-mcp/package.json` + cả cây phụ thuộc khoá bằng
-`tools/playwright-mcp/package-lock.json`, Chromium ghim theo `playwright-core` đó, `--headless --isolated
---viewport-size 1280x720`). Agent dùng nó để **xem** UI và **sinh finding**, như `/code-review`. Mỗi finding
+Project có giao diện thì dựng Playwright MCP **ghim phiên bản** (cách dựng + vì sao ghim: GIT-FLOW.md §
+"Bộ công cụ agent khi dựng O7-A"). Agent dùng nó để **xem** UI và **sinh finding**, như `/code-review`. Mỗi finding
 về giao diện → một test Playwright dạng script (cùng `playwright-core` đã khoá, viewport cố định, tắt
 animation, dữ liệu/đồng hồ cố định, backend fake/replay) đặt trong đơn vị nghiệm thu — **đó** mới là phán
 quyết. So ảnh chụp: ảnh baseline là snapshot đóng băng (luật N2: chụp lại baseline = lần nghiệm thu mới,
 ngưỡng sai khác khai trước).
-
-★ Vì sao phải ghim trình duyệt, đo 2026-11-23 trên máy này: Chrome hệ thống `157.0.8103.80`, Chromium do
-`playwright-core` ghim `157.0.8103.15` — đã lệch patch dù cùng ngày. Dùng Chrome hệ thống (mặc định của
-MCP, và `npx @playwright/mcp@latest` của plugin `playwright` chính thức) thì UI "đúng" trôi theo mỗi lần
-Chrome tự cập nhật. Cài: `npm ci --prefix tools/playwright-mcp && node
-tools/playwright-mcp/node_modules/playwright-core/cli.js install chromium`.
 
 ## 5. Commit / Push
 
