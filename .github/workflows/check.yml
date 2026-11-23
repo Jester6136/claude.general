@@ -15,9 +15,11 @@ on:
     # edited: thêm `Closes #N` vào mô tả PR sau khi CI đã xanh vẫn phải chạy lại kiểm đơn vị nghiệm thu.
     types: [opened, synchronize, reopened, edited]
 
-# `edited` làm mỗi lần sửa mô tả PR chạy lại — huỷ run cũ cùng PR để status hiển thị luôn là run mới nhất.
+# `edited` làm mỗi lần sửa mô tả PR chạy lại — huỷ run cũ CÙNG PR. Push lên main nhóm theo SHA ⇒ không
+# bao giờ huỷ nhau (mỗi merge commit phải có phán quyết riêng). Run bị huỷ để lại check CANCELLED;
+# post-merge.sh chỉ đọc lần chạy MỚI NHẤT của từng check nên không bị chặn oan.
 concurrency:
-  group: check-${{ github.event.pull_request.number || github.ref }}
+  group: check-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:

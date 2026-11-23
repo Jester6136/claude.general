@@ -256,14 +256,17 @@ không có check nào cũng là KHÔNG đạt (không có phán quyết thì kh�
 
 | Thứ | Đóng khi | Ai/cái gì đóng |
 |---|---|---|
-| **Issue** | PR có `Closes #N` merge + nghiệm thu XANH | GitHub tự đóng; script đóng nốt cái GitHub bỏ sót (liên-repo, `Closes` trong commit) |
-| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/<epic>-*.sh` (nếu có) XANH trên HEAD hiện tại | Script — con lấy từ sub-issue của GitHub ∪ `#N` trong body epic |
+| **Issue** | PR có `Closes #N` merge + nghiệm thu XANH + `acceptance/<N>-*.sh` có trên `origin/<base>` | GitHub tự đóng; script đóng nốt cái bỏ sót, và **MỞ LẠI** Issue cùng repo bị đóng mà không có đơn vị (vd đóng qua commit message/sidebar — CI không thấy) |
+| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/epic/<E>/*.sh` (nếu có) XANH trên `origin/<base>` | Script — con = **chỉ link tường minh**: sub-issue (đủ mọi trang) ∪ dòng task-list `- [ ] #N` trong body epic. Con chỉ tự khai ô "Epic" mà chưa link ⇒ cảnh báo, KHÔNG đóng epic |
 | **Worktree** | Nhánh của nó đã merge, worktree sạch | Script — `git worktree remove` KHÔNG `--force`; còn thay đổi chưa commit thì DỪNG, báo |
-| **Nhánh local/remote** | Đã xác nhận MERGED (cổng ở trên) | Script — `branch -D` (squash/rebase làm `-d` từ chối) + `push --delete` |
+| **Nhánh local/remote** | Đã xác nhận MERGED (cổng ở trên) và là `agent/*` của chính repo | Script — `branch -D` (squash/rebase làm `-d` từ chối) + `push --delete`. Nhánh khác (`develop`, fork) không bao giờ bị xoá |
 
 **Epic = tổng của các đơn vị nghiệm thu con, cộng (tuỳ chọn) một đơn vị nghiệm thu tích hợp của riêng
 nó.** Epic không có đơn vị riêng thì đóng khi mọi con đã đóng — mỗi con đã có phán quyết tất định của nó.
-Cần kiểm "các con ghép lại chạy đúng" thì khai `acceptance/<epic>-*.sh` lúc mở epic, cùng luật §4.1.
+Cần kiểm "các con ghép lại chạy đúng" thì khai trong `acceptance/epic/<E>/` lúc mở epic, cùng luật §4.1 —
+**thư mục riêng, không nằm ở `acceptance/*.sh`**, vì nó sẽ ĐỎ cho tới khi con cuối cùng xong và không được
+chặn PR của các con (`check.sh --acceptance` chỉ quét cấp trên cùng). Script dồn mọi điều kiện tiên quyết
+(MERGED, check, worktree sạch) lên TRƯỚC khi đóng bất cứ thứ gì — dừng giữa chừng thì chưa đổi gì.
 
 [OPT] Bật `delete_branch_on_merge` để GitHub tự xoá nhánh remote (`gh api -X PATCH repos/<o>/<r> -f
 delete_branch_on_merge=true`) — script vẫn cần cho worktree/nhánh local và epic, những thứ GitHub không
