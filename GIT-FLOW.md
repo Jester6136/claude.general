@@ -448,8 +448,8 @@ hoặc Settings → General → Features → Discussions trên GitHub UI.
 
 **Hệ nhiều repo (`MULTI-REPO.md`) — chọn MỘT nơi host, đừng bật khắp nơi:** bật Discussions trên mọi
 repo trong một hệ sinh thái tạo đúng lỗi L2 (một loại sự thật, nhiều nhà) mà `CLAUDE.md` §1 cấm — người
-sau không biết thảo luận về X nằm ở repo nào. Chọn theo cùng logic "repo hub giữ Tier 0" (`GIT-FLOW.md`
-`MULTI-REPO.md` "Một repo hub"): nếu có repo hub tài liệu riêng → host ở đó; nếu không, host ở repo **trung tâm nhất
+sau không biết thảo luận về X nằm ở repo nào. Chọn theo cùng logic "repo hub giữ Tier 0" (`MULTI-REPO.md`
+"Một repo hub"): nếu có repo hub tài liệu riêng → host ở đó; nếu không, host ở repo **trung tâm nhất
 theo luồng người dùng** (thường là repo phục vụ/điều phối, không phải repo lưu trữ dữ liệu thô) — ghi lựa
 chọn này vào `docs/README.md` như mọi quyết định [OPT] khác.
 
@@ -498,7 +498,7 @@ file tĩnh). **Chưa cần:** agent chỉ có quyền đọc/sửa file trong sa
 
 Đây là **các quyết định đã thực sự phải ra** khi lắp bộ này vào một hệ nhiều repo, kèm lý do. Ghi lại để
 lần sau không phải nghĩ lại từ đầu. Bối cảnh gốc: 3 repo Python cùng một nhóm, chạy bằng
-`docker compose`.
+`docker compose`, CI tự dựng (self-hosted). Các dòng chỉ dành riêng cho runner của nền tảng đó đã bỏ.
 
 | Quyết định | Chọn gì | Vì sao |
 |---|---|---|
@@ -527,14 +527,18 @@ xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng m
 
 ### Khi KHÔNG có runner / KHÔNG đủ quyền — vẫn lấy được phần lớn giá trị
 
-**Kiểm CI có chạy thật không** trước khi tin nó: push một workflow tối giản rồi xem tab Actions. Job nằm
-`Queued` mãi mà không ai nhận ⇒ không có runner nào chạy nó (Actions bị tắt, hoặc runner tự dựng chưa đăng
-ký). Đây là kiểm nghiệm thực chứng, hơn hẳn việc đoán qua menu.
+**Kiểm CI có chạy thật không** trước khi tin nó: push một workflow tối giản rồi xem tab Actions.
+- **Không có run nào xuất hiện** ⇒ Actions đang tắt cho repo/tổ chức (hoặc `on:` không khớp sự kiện).
+- **Job nằm `Queued` mãi** ⇒ không runner nào khớp nhãn `runs-on` (runner tự dựng chưa đăng ký, hoặc sai nhãn).
 
-★**Một trường hợp có thật đáng nhớ:** trong lịch sử pipeline của repo có một job hỏng từ **hai tháng
-trước**, ai cũng tưởng là lỗi code nên không ai đụng tới. Đọc kỹ thì nó chỉ nằm chờ rồi hết giờ, tức là
-**chưa từng có runner nào nhận**, code chưa hề được chạy lấy một lần. Bài học: *trạng thái của pipeline là
-dữ liệu chẩn đoán, đọc nó trước khi kết luận về code.*
+★**Một trường hợp có thật đáng nhớ** (quan sát trên một CI tự dựng, không phải GitHub): trong lịch sử
+pipeline có một job hỏng từ **hai tháng trước**, ai cũng tưởng là lỗi code nên không ai đụng tới. Đọc kỹ
+thì job chỉ nằm chờ rồi hết giờ, tức là **chưa từng có runner nào nhận**, code chưa hề được chạy lấy một
+lần. Bài học: *trạng thái của pipeline là dữ liệu chẩn đoán, đọc nó trước khi kết luận về code.*
+
+**Cách biết mình có đủ quyền dựng G2/G3 không** (đăng ký runner tự dựng, khoá nhánh cần quyền admin repo):
+`gh api repos/<owner>/<repo> --jq .permissions.admin` → `true`/`false`. Kiểm trước khi thiết kế quy trình
+dựa vào khoá nhánh, đừng đợi tới lúc bấm thì gặp 403/404.
 
 **Phương án không cần quyền: git hook `pre-push`** gọi đúng `scripts/check.sh`.
 

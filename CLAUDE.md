@@ -16,7 +16,8 @@
 chọn quy mô S/M/L · §3 Tier 0 (4 file luôn có) · §4 danh mục theo tầng · §5 khuôn mẫu copy-paste · §6 kỷ
 luật số · §6b pipeline AI (chi tiết ở **`AI-PIPELINE.md`**) · §7 vòng đời + DoD · §8 ép
 bằng máy · §9 tra triệu chứng→luật · §10 Sprint 0 · **§11 các tuỳ chọn [OPT]** · §11b git làm hệ quản lý
-việc (chi tiết ở **`GIT-FLOW.md`** cạnh file này — chỉ đọc khi đã chọn O7-A) · §12 ba thứ không nên làm.
+việc (chi tiết ở **`GIT-FLOW.md`** cạnh file này — chỉ đọc khi đã chọn O7-A) · nhiều repo phụ thuộc nhau: đọc
+**`MULTI-REPO.md`** (bất kể O7-A/B) · §12 ba thứ không nên làm.
 
 > **Bắt đầu project mới?** Đừng chỉ chép file này — có sẵn bộ khung copy-paste đầy đủ (AGENT.md ·
 > `templates/` · `.github/` issue-forms + PR template + workflow CI) trong repo chứa file này

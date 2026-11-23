@@ -2,7 +2,8 @@
 
 > **File này là gì:** phần mở rộng **[OPT]**, trước đây là `GIT-FLOW.md` §11c. Tách ra ngày 2026-11-23 để
 > project chỉ có một repo không phải tải khoảng 80 dòng này mỗi lần đọc GIT-FLOW. Giữ nguyên số mục §11c
-> (L3: ID không đánh lại), nên các trích dẫn cũ "§11c" vẫn trỏ đúng nội dung.
+> (L3: ID không đánh lại). Trích dẫn cũ dạng "`GIT-FLOW.md` §11c" tìm qua con trỏ ở mục lục `GIT-FLOW.md`.
+> Mọi tham chiếu `§1`–`§10`, `§12` không ghi tên file trong file này trỏ về `CLAUDE.md`.
 > **[TRIGGER] đọc file này khi:** ≥2 repo **thật sự phụ thuộc lẫn nhau** (chi tiết ngay dưới), hoặc
 > **trước khi tạo repo thứ 2** cho cùng một hệ.
 > **Phụ thuộc:** `CLAUDE.md` (L1–L4, §2 quy mô) · `GIT-FLOW.md` §11b (Issue/PR, `agent-ready`, CI).
@@ -53,7 +54,7 @@ Tài liệu CHỈ RIÊNG repo này (algorithm.md, interface.md...) vẫn ở doc
 
 **Context Map đổi vai trò:** trước đây (1 repo) nó vẽ ranh giới với thế giới ngoài; giờ nó vẽ **ranh
 giới giữa 3 project của chính bạn** — cái gì thuộc repo nào, ai gọi ai, qua hợp đồng nào (Interface
-Control Document — Tier 2/3, không còn là tuỳ chọn ở mức M, xem §4).
+Control Document — Tier 2/3, không còn là tuỳ chọn ở mức M, xem `CLAUDE.md` §4).
 
 ### ID cấp hệ sinh thái — thêm một tầng, không thay tầng cũ
 
@@ -66,23 +67,26 @@ service) so với `ADR-<PROJ>-*` (quyết định nội bộ 1 repo).
 
 `Closes #NN` trong PR chỉ tự đóng Issue **cùng repo**. GitHub hỗ trợ `Closes owner/repo-khac#12` để đóng
 Issue ở repo khác, nhưng nếu không quy ước rõ trong template `agent-ready`, Issue liên-repo sẽ bị quên.
-Thêm một trường bắt buộc vào SPEC (`GIT-FLOW.md` §11b) khi việc động tới >1 repo: **"Repo liên quan"** — liệt kê hết,
+Điền trường **"Repo liên quan"** của SPEC (`agent-ready.yml`, `GIT-FLOW.md` §11b) **mỗi khi** việc động tới >1 repo
+(form không ép được điều kiện "nếu >1 repo", nên đây là kỷ luật, không phải cổng máy) — liệt kê hết,
 mỗi repo một Issue riêng, trỏ nhau bằng `Blocked by owner/repo#N` / `Blocks owner/repo#N`.
 
 ### CI dùng chung — reusable workflow, không copy-paste YAML
 
-Đặt `scripts/check.sh` (G1) và
-workflow gốc trong repo hub hoặc một repo `.github` cấp tổ chức, 3 repo con gọi lại bằng:
+Đặt workflow cổng (G2) trong repo hub hoặc một repo `.github` cấp tổ chức, 3 repo con gọi lại bằng:
 ```yaml
 jobs:
   check:
     uses: <org>/<eco>-docs/.github/workflows/check.yml@main
 ```
+Workflow được gọi phải khai `on: workflow_call:` (`check.yml` của bộ khung đã có sẵn). Nó chạy trong ngữ cảnh
+repo **con**: `actions/checkout` lấy code repo con, nên repo con vẫn phải có `scripts/check.sh` của mình.
+Cái dùng chung là **YAML cổng**, không phải nội dung kiểm của từng repo.
 Một nơi định nghĩa cổng, ba nơi gọi — đúng nguyên tắc "CI chạy đúng script mà người chạy ở máy" (bảng
 quyết định ở `GIT-FLOW.md` §11b), chỉ mở rộng từ 1 repo ra N repo.
 
 ### Khi nào tính lại quy mô S→M
 
-Có hệ sinh thái ≥2 repo phụ thuộc chéo là điều kiện "domain thứ 2 sắp lên" trong bảng §2 đã xảy ra thật
+Có hệ sinh thái ≥2 repo phụ thuộc chéo là điều kiện "domain thứ 2 sắp lên" trong bảng `CLAUDE.md` §2 đã xảy ra thật
 — tự động đẩy quy mô tài liệu từ **S lên M**: Tier 0 tách file hẳn (không gộp như mức S nữa), PR review
 bắt buộc cho `docs/**` ở repo hub, Doc Index có trạng thái Draft/In Review/Approved.

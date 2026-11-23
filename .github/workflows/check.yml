@@ -14,6 +14,9 @@ on:
     branches: [main]
     # edited: thêm `Closes #N` vào mô tả PR sau khi CI đã xanh vẫn phải chạy lại kiểm đơn vị nghiệm thu.
     types: [opened, synchronize, reopened, edited]
+  # Cho repo con gọi lại làm CI dùng chung (MULTI-REPO.md § "CI dùng chung") — chạy trong ngữ cảnh sự kiện
+  # của repo GỌI (github.event.pull_request vẫn là PR của repo con).
+  workflow_call:
 
 # `edited` làm mỗi lần sửa mô tả PR chạy lại — huỷ run cũ CÙNG PR. Push lên main nhóm theo SHA ⇒ không
 # bao giờ huỷ nhau (mỗi merge commit phải có phán quyết riêng). Run bị huỷ để lại check CANCELLED;
