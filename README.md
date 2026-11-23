@@ -11,6 +11,7 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 | `AGENT.md` | Quy tắc vận hành agent — ranh giới hành động, kỷ luật hạ tầng, **§4 nghiệm thu TẤT ĐỊNH (N0 core · N1 phần mở rộng · N2 output LLM qua snapshot đóng băng)**, **§6 tự-review bắt buộc trước khi báo "xong"**, **§8 research web (học thuật + industry) TỰ ĐỘNG trước khi chốt phương án**. `CLAUDE.md` §0.5 bắt agent đọc file này mỗi phiên. |
 | `GIT-FLOW.md` | [OPT] Chi tiết đầy đủ mô hình Issue→worktree→PR→merge (chỉ đọc khi chọn O7-A ở `CLAUDE.md` §11). Chấp nhận = phán quyết nghiệm thu tất định, không phải merge hay review. |
 | `AI-PIPELINE.md` | [OPT] Audit minh bạch/provenance/độ tin cậy cho pipeline AI (trước là `CLAUDE.md` §6b). Mặc định BẬT khi có ≥2 tầng biến-đổi-dữ-liệu-bằng-AI. |
+| `MULTI-REPO.md` | [OPT] Hệ nhiều repo phụ thuộc nhau: monorepo hay polyrepo, repo hub giữ Tier 0, ID cấp ECO, CI dùng chung (trước là `GIT-FLOW.md` §11c). |
 | `templates/` | Copy-paste thẳng vào `docs/` project mới: `glossary.md` · `adr-log.md` · `context-map.md` · `README.md` (doc index) · `roadmap.md` · `HANDOFF.md` · `constitution.md` ([OPT]). |
 | `.github/ISSUE_TEMPLATE/` | `agent-ready.yml` (SPEC/PLAN) · `decision-needed.yml` — chỉ cần nếu dùng O7-A. |
 | `.github/PULL_REQUEST_TEMPLATE.md` | Checklist bằng chứng trước khi mở PR. |
@@ -27,6 +28,7 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 cp claude.general/CLAUDE.md claude.general/AGENT.md <repo-mới>/
 cp claude.general/GIT-FLOW.md <repo-mới>/          # chỉ nếu dùng O7-A
 cp claude.general/AI-PIPELINE.md <repo-mới>/       # chỉ nếu có ≥2 tầng xử lý dữ liệu bằng AI
+cp claude.general/MULTI-REPO.md <repo-mới>/        # chỉ nếu ≥2 repo phụ thuộc nhau
 mkdir -p <repo-mới>/docs
 cp claude.general/templates/*.md <repo-mới>/docs/
 cp -r claude.general/.github <repo-mới>/
@@ -43,7 +45,7 @@ cd <repo-mới> && ./scripts/install-hooks.sh
    / `./scripts/check.sh`).
 6. Chọn quy mô S/M/L (`CLAUDE.md` §2) và 11 tuỳ chọn O1-O11 (`CLAUDE.md` §11) — **ghi lại đã chọn gì**
    vào `docs/README.md`, đừng để phiên sau tự đoán.
-7. Nếu >1 repo phụ thuộc chéo: đọc `GIT-FLOW.md` §11c trước khi tạo repo thứ 2 — quyết định monorepo
+7. Nếu >1 repo phụ thuộc chéo: đọc `MULTI-REPO.md` trước khi tạo repo thứ 2 — quyết định monorepo
    hay polyrepo là quyết định thật, ghi lại như một ADR.
 
 ## Vì sao tách thành nhiều file
@@ -54,5 +56,7 @@ cd <repo-mới> && ./scripts/install-hooks.sh
   chỉ cần khi đã chọn phương án đó; không phải mọi project cần tải nó mỗi phiên.
 - `AI-PIPELINE.md` = **[OPT]** audit độ tin cậy cho pipeline AI — chỉ project có pipeline AI nhiều tầng
   mới cần.
+- `MULTI-REPO.md` = **[OPT]** hệ nhiều repo (monorepo/polyrepo · repo hub · ID cấp ECO · CI dùng chung) —
+  chỉ khi ≥2 repo phụ thuộc nhau.
 
 Một sự thật, một nhà — đúng nguyên tắc L2 mà chính `CLAUDE.md` đề ra cho các project dùng nó.

@@ -52,7 +52,7 @@ Chọn MỘT trong hai theo O7 — điều kiện chọn (số AGENT chạy đ�
 
 - **O7-B:** mọi vòng "raise issue → fix → verify" ghi vào `<roadmap>.md §TODO` (khuôn `CLAUDE.md` §5.4,
   trạng thái ⬜/🔨/✅ theo L5). Không tạo file log rời (`ISSUES.md`/`CHANGELOG.md`).
-- **O7-A:** GitHub/GitLab Issue là nguồn việc-đang-mở; quy trình ở `GIT-FLOW.md` (kể cả cách chuyển từ
+- **O7-A:** GitHub Issue là nguồn việc-đang-mở; quy trình ở `GIT-FLOW.md` (kể cả cách chuyển từ
   O7-B giữa chừng).
 
 Đổi TODO/Issue **CÙNG COMMIT** với code fix — doc lệch code = nợ kỹ thuật, coi như việc chưa xong.
@@ -186,8 +186,8 @@ lại đúng những lỗi bước này bắt được.
 
 ## 7. Vòng lặp làm việc: Issue → worktree → implement → cổng → PR → review → merge [OPT — chỉ khi chọn O7-A]
 
-Chi tiết (lý do từng bước, cổng G1–G5, SPEC/PLAN, run record, nhiều repo) ở **`GIT-FLOW.md`** — đây
-chỉ là checklist thao tác:
+Chi tiết (lý do từng bước, cổng G1–G5, SPEC/PLAN, run record) ở **`GIT-FLOW.md`**; nhiều repo phụ thuộc
+nhau ở **`MULTI-REPO.md`** — đây chỉ là checklist thao tác:
 
 1. `git worktree add .worktrees/<slug> -b agent/<issue-id>-<slug> origin/<nhánh-nền>` + overlap scan.
 2. **Viết đơn vị nghiệm thu TRƯỚC** (`acceptance/<issue-id>-<slug>.sh`, cấp N0/N1/N2 theo SPEC, §4.1) →

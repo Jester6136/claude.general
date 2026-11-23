@@ -62,7 +62,7 @@ body:
   - type: input
     id: related_repos
     attributes:
-      label: "Repo liên quan (nếu việc chạm >1 repo — GIT-FLOW.md §11c)"
+      label: "Repo liên quan (nếu việc chạm >1 repo — MULTI-REPO.md)"
       description: "Liệt kê hết; mỗi repo một Issue riêng, trỏ nhau bằng Blocked by/Blocks owner/repo#N."
   - type: markdown
     attributes:

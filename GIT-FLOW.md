@@ -8,8 +8,8 @@
 > `CLAUDE.md` (bảy luật bất di bất dịch, cách chọn quy mô, Tier 0...). Đọc `CLAUDE.md` trước.
 >
 > **Mục lục:** §11b Git làm hệ quản lý tài liệu & việc (constitution.md · quy ước nhánh `agent/*` ·
-> **GitHub Discussions trước khi thành Issue** · Hai mẫu Issue · run record · tách SPEC/PLAN) · §11c Hệ
-> sinh thái nhiều repo (monorepo vs polyrepo · hub repo · ID cấp ECO · CI dùng chung).
+> **GitHub Discussions trước khi thành Issue** · Hai mẫu Issue · run record · tách SPEC/PLAN). Hệ nhiều repo:
+> **`MULTI-REPO.md`** (§11c cũ, đã tách ra — chỉ đọc khi ≥2 repo phụ thuộc nhau).
 
 ---
 
@@ -34,7 +34,7 @@ người). `git branch --list 'agent/*'` liệt kê đúng ai đang làm gì t�
 Mô hình dưới đây **quan sát được ở một project có thật** đang chạy theo cách này (một người đóng cả ba
 vai chủ sản phẩm / kiến trúc sư / người gác cổng, phần lớn code do agent AI viết). Đặc trưng của nó:
 **con người không giao việc bằng chat, mà giao bằng Issue; agent không báo cáo bằng lời, mà báo cáo
-bằng PR/MR; và cái gật đầu cuối cùng vẫn là của con người, tại nút merge.**
+bằng PR; và cái gật đầu cuối cùng vẫn là của con người, tại nút merge.**
 
 ```mermaid
 flowchart TB
@@ -52,7 +52,7 @@ flowchart TB
         DISC["💬 Discussion<br/>khảo sát/câu hỏi mở<br/>CHƯA đóng khung phương án"]
         I["📋 Issue<br/>BẮT BUỘC nhãn <i>agent-ready</i> hoặc <i>decision-needed</i><br/>= ĐẶC TẢ + ĐƠN VỊ NGHIỆM THU khai trước (N0/N1/N2 + ngưỡng)"]
         B["🌿 Branch/worktree riêng<br/>mỗi Issue một nhánh"]
-        P["🔀 PR/MR<br/>= báo cáo của agent, dạng DIFF + phán quyết"]
+        P["🔀 PR<br/>= báo cáo của agent, dạng DIFF + phán quyết"]
         C{"🎯 CI — TẤT ĐỊNH<br/>check.sh --all + --acceptance<br/>= PHÁN QUYẾT nghiệm thu"}
         RV["🔎 skill code-review — KHÔNG tất định<br/>BẮT BUỘC chạy, chỉ SINH finding"]
         M["✅ Merge<br/>= ghi nhận phán quyết XANH"]
@@ -63,7 +63,7 @@ flowchart TB
         A2["overlap scan<br/>đã có ai làm việc này chưa"]
         A0["viết đơn vị nghiệm thu TRƯỚC<br/>chạy trên nhánh nền → phải ĐỎ"]
         A3["code + tự chạy cổng"]
-        A4["mở PR/MR<br/>kèm Closes #NN"]
+        A4["mở PR<br/>kèm Closes #NN"]
         A6["mỗi finding → test tất định<br/>HOẶC bác bỏ kèm lý do"]
         A5["merge<br/>CHỈ khi được H3 trao quyền"]
     end
@@ -162,7 +162,7 @@ dấu hiệu luật đó thuộc về mọi phiên, không thuộc về một qu
 sequenceDiagram
     autonumber
     actor N as 👤 Người
-    participant G as 🗃️ Git (Issue/MR)
+    participant G as 🗃️ Git (Issue/PR)
     participant A as 🤖 Agent
     participant C as ⚙️ CI
     participant R as 🔎 skill code-review
@@ -170,7 +170,7 @@ sequenceDiagram
     N->>G: mở Issue `agent-ready` (kèm đơn vị nghiệm thu + ngưỡng)
     G-->>A: giao việc (brief tự chứa)
     A->>A: viết đơn vị nghiệm thu → thấy ĐỎ trên nhánh nền → code
-    A->>G: mở MR (Closes #NN)
+    A->>G: mở PR (Closes #NN)
     G->>C: check.sh --all + --acceptance
     C-->>A: ĐỎ → agent tự sửa, đẩy lại
     Note over A,C: vòng này KHÔNG làm phiền người
@@ -178,7 +178,7 @@ sequenceDiagram
     A->>R: chạy /code-review (BẮT BUỘC, ai merge cũng vậy)
     R-->>A: finding
     A->>G: mỗi finding → test mới (CI chạy lại) HOẶC bác bỏ kèm lý do
-    G-->>N: 🔔 (1) "MR: nghiệm thu XANH, finding đã xử lý"
+    G-->>N: 🔔 (1) "PR: nghiệm thu XANH, finding đã xử lý"
     alt tự merge
         N->>G: đọc diff → merge
     else trao quyền cho Agent
@@ -201,15 +201,15 @@ sequenceDiagram
 | 4 | Pipeline nhánh chính đỏ | Hỏng thứ đang chạy — khẩn |
 
 ★ Thông báo (1) chỉ nổ khi phán quyết XANH và không còn finding bỏ trống — báo sớm hơn là gọi người tới
-xem một MR còn dở, đúng thứ 4-thời-điểm này cố tránh.
+xem một PR còn dở, đúng thứ 4-thời-điểm này cố tránh.
 
 ★ **KHÔNG** báo khi: agent đang code · CI đỏ ở nhánh feature (agent tự sửa) · mỗi commit. Báo mọi thứ =
 người tắt thông báo = mất luôn cả 4 cái quan trọng.
 
 ### Điều kiện tiên quyết — làm SAI thứ tự là tự chặn đường
-> **`make check` chạy được ở máy → CI chạy được `make check` → RỒI MỚI khoá nhánh + bắt buộc MR.**
+> **`make check` chạy được ở máy → CI chạy được `make check` → RỒI MỚI khoá nhánh + bắt buộc PR.**
 
-Áp nghi lễ MR khi CI chưa chạy thì "merge = đã qua test" chỉ là lời tuyên bố — đúng thứ L5 cấm, và tệ
+Áp nghi lễ PR khi CI chưa chạy thì "merge = đã qua test" chỉ là lời tuyên bố — đúng thứ L5 cấm, và tệ
 hơn không áp vì nó tạo cảm giác an toàn giả.
 
 ### Kích hoạt O7-A giữa chừng một project đang chạy O7-B
@@ -220,7 +220,7 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
 1. **Kiểm Issue tracker sạch trước khi chuyển:** `gh issue list --state all -R <owner>/<repo>`. Có Issue
    cũ đang mở từ trước ⇒ xử lý/đóng trước, tránh nhầm giữa "đã có sẵn từ khi khác" và "mới mở do chuyển
    đổi lần này".
-2. **Ghi quyết định bằng một ADR** (`ADR-<PROJ>-NNN`, hoặc `ADR-ECO-NNN` nếu ảnh hưởng ≥2 repo, §11c) —
+2. **Ghi quyết định bằng một ADR** (`ADR-<PROJ>-NNN`, hoặc `ADR-ECO-NNN` nếu ảnh hưởng ≥2 repo, `MULTI-REPO.md`) —
    Nygard, liệt kê rõ phương án bị loại và vì sao (không chỉ phương án được chọn).
 3. **Đảo O2 cùng lúc nếu `adr-log.md` đang là một file** — cùng nguyên nhân concurrency, không phải hai
    quyết định độc lập. Tách thành `adr-log/`, một file/ADR (tên `ADR-<PROJ>-NNN-<slug>.md`, ID là định
@@ -365,7 +365,7 @@ Thêm Issue mà vẫn giữ bảng TODO trong docs = **hai nguồn sự thật**
 |---|---|---|
 | Việc **đang mở**, trạng thái, ai làm, chặn bởi gì | **Issue** | Vòng đời ngắn, có sẵn cơ chế đóng/gán/lọc |
 | **Vì sao** quyết định thế, bất biến, bài học, cơ chế | **Docs (ADR/algorithm/testing)** | Đáng đọc lại sau 6 tháng; Issue đóng rồi không ai lục |
-| Lịch sử "đã sửa gì" | **`git log` + MR đã merge** | Đừng chép lại vào docs |
+| Lịch sử "đã sửa gì" | **`git log` + PR đã merge** | Đừng chép lại vào docs |
 
 Nối hai chiều: Issue trỏ mục doc liên quan; doc ghi bài học kèm số Issue. Mỗi loại vẫn đúng một nhà.
 
@@ -385,7 +385,7 @@ nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy tr
 | Cổng | Nội dung | Tất định? | Chi phí | Đáng làm khi |
 |---|---|---|---|---|
 | G1 **`check.sh --all` + `--acceptance`** | lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4) | ✅ — **đây là phán quyết** | thấp | luôn luôn |
-| G2 **CI chạy G1** | mỗi push/MR | ✅ | thấp (nếu có runner) | luôn luôn |
+| G2 **CI chạy G1** | mỗi push/PR | ✅ | thấp (nếu có runner) | luôn luôn |
 | G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | ✅ | trung bình | sau khi G2 ổn định |
 | G4 **skill `code-review`** (+ Playwright MCP cho UI) | **BẮT BUỘC chạy trước MỌI merge** (chốt 2026-09-13), ai bấm merge cũng vậy. Vai trò: **sinh finding**, KHÔNG phán quyết. Mỗi finding → test tất định (vào G1) hoặc bác bỏ kèm lý do trong PR | ❌ — nên không được chặn trực tiếp | thấp | luôn luôn |
 | G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | ❌ | cao | **[TRIGGER]** ≥2 người thật |
@@ -446,10 +446,10 @@ hoặc Settings → General → Features → Discussions trên GitHub UI.
 | **Polls** | Cần biểu quyết nhanh giữa vài phương án |
 | **Show and tell** | Khoe demo/kết quả, không cần hành động gì tiếp |
 
-**Hệ nhiều repo (`§11c` CLAUDE.md) — chọn MỘT nơi host, đừng bật khắp nơi:** bật Discussions trên mọi
+**Hệ nhiều repo (`MULTI-REPO.md`) — chọn MỘT nơi host, đừng bật khắp nơi:** bật Discussions trên mọi
 repo trong một hệ sinh thái tạo đúng lỗi L2 (một loại sự thật, nhiều nhà) mà `CLAUDE.md` §1 cấm — người
-sau không biết thảo luận về X nằm ở repo nào. Chọn theo cùng logic "repo hub giữ Tier 0" (`GIT-FLOW.md`
-§11c "Một repo hub"): nếu có repo hub tài liệu riêng → host ở đó; nếu không, host ở repo **trung tâm nhất
+sau không biết thảo luận về X nằm ở repo nào. Chọn theo cùng logic "repo hub giữ Tier 0" (`MULTI-REPO.md`
+"Một repo hub"): nếu có repo hub tài liệu riêng → host ở đó; nếu không, host ở repo **trung tâm nhất
 theo luồng người dùng** (thường là repo phục vụ/điều phối, không phải repo lưu trữ dữ liệu thô) — ghi lựa
 chọn này vào `docs/README.md` như mọi quyết định [OPT] khác.
 
@@ -483,9 +483,9 @@ sẵn; tạo tay (`gh issue create` không qua template, hoặc import/retroacti
 đang làm cùng một bài toán không. *Tiền lệ thật:* hai Story song song viết **hai hàm độc lập cho cùng
 một việc**, chỉ lộ ra sau khi cả hai đã merge.
 
-### [OPT] Run record trong PR/MR — nhật ký phiên chạy của agent
+### [OPT] Run record trong PR — nhật ký phiên chạy của agent
 
-Mô tả PR/MR do agent mở nên có thêm, ngoài `Closes #NN`: **quyền công cụ** agent được cấp trong phiên đó
+Mô tả PR do agent mở nên có thêm, ngoài `Closes #NN`: **quyền công cụ** agent được cấp trong phiên đó
 (đọc/ghi file, network, shell) · **model + version** đã dùng · **ngoại lệ chính sách** nếu có (vd được
 phép bỏ qua một rule lint cụ thể). Không phải để trang trí — khi có sự cố, câu cần trả lời là *"agent
 được phép làm gì lúc đó"*, không phải chỉ *"agent đã làm gì"* (cái sau đã có sẵn trong diff).
@@ -494,29 +494,15 @@ phép bỏ qua một rule lint cụ thể). Không phải để trang trí — k
 file tĩnh). **Chưa cần:** agent chỉ có quyền đọc/sửa file trong sandbox, không có quyền thực thi ngoài
 `make check`.
 
-### Nếu nền là GitLab (không phải GitHub) — bảng quy đổi
-| GitHub | GitLab | Lưu ý |
-|---|---|---|
-| Pull Request | **Merge Request** | `Closes #NN` vẫn tự đóng Issue |
-| Discussions (độc lập, xem § "GitHub Discussions" ở trên) | **không có** | Dùng Issue gắn nhãn `discussion`, đóng thủ công khi tốt nghiệp thành `decision-needed` |
-| Issue Forms (`.yml`, có trường cấu trúc) | `.gitlab/issue_templates/*.md` | Chỉ markdown — không có trường bắt buộc |
-| PR template | `.gitlab/merge_request_templates/*.md` | |
-| Actions | `.gitlab-ci.yml` | **Kiểm có runner trước** (Settings → CI/CD → Runners) |
-| `gh` CLI | `glab` CLI | Không có sẵn thì agent không thao tác được Issue/MR |
-| Branch protection + required review | Protected branches (có ở bản free); **approval rules/CODEOWNERS ép buộc thường là bản trả phí** | Kiểm tier trước khi thiết kế quy trình dựa vào chúng |
-
 ### Bảng quyết định điển hình khi dựng cổng lần đầu (làm gì · quyết gì · vì sao)
 
 Đây là **các quyết định đã thực sự phải ra** khi lắp bộ này vào một hệ nhiều repo, kèm lý do. Ghi lại để
 lần sau không phải nghĩ lại từ đầu. Bối cảnh gốc: 3 repo Python cùng một nhóm, chạy bằng
-`docker compose`, GitLab tự dựng (self-hosted).
+`docker compose`, CI tự dựng (self-hosted). Các dòng chỉ dành riêng cho runner của nền tảng đó đã bỏ.
 
 | Quyết định | Chọn gì | Vì sao |
 |---|---|---|
 | **Script hay Makefile** | một `scripts/check.sh` | Máy dev/run **không có `make`**; cài thêm gói hệ thống là đổi hạ tầng, không làm lặng lẽ. Vai trò y hệt; nếu sau này có `make` thì `check: ; ./scripts/check.sh` |
-| **Runner: cài bằng apt hay chạy bằng docker** | **docker** (ảnh runner chính thức) | Gỡ sạch bằng `compose down` + xoá volume, không để lại systemd unit hay binary lạc. Máy vốn đã docker-first |
-| **Runner đặt ở thư mục nào** | cùng chỗ với **hạ tầng dùng chung sẵn có** (vd thư mục đang chứa stack observability) | Đi theo tiền lệ đã có trong repo thay vì mở quy ước mới; hạ tầng dùng chung cả nhóm repo thì để một chỗ |
-| **Cấp đăng ký runner** | **cấp GROUP**, không phải từng project | Một runner phục vụ mọi repo trong nhóm, khỏi dựng lại N lần |
 | **CI chạy gì** | gọi **đúng script mà người chạy ở máy** | Một nơi định nghĩa, hai nơi gọi. Viết lại logic kiểm trong YAML là nguồn kinh điển của "máy tôi xanh mà CI đỏ" |
 | **CI chạy tầng nào** | **chỉ tầng TĨNH** | Máy CI không có hạ tầng của app (DB, message bus, dịch vụ mô hình). Smoke vẫn chạy ở máy dev qua `--smoke`. Công cụ kiểm tĩnh chỉ đọc AST ⇒ chạy được trong image trống |
 | **Bật bao nhiêu luật lint** | **chỉ nhóm bắt lỗi thật** (lỗi cú pháp · so sánh sai · dùng tên chưa định nghĩa) | Bật cả bộ ra **337 lỗi**, phần lớn là style ⇒ cổng đỏ-sẵn → người ta tắt đi → mất luôn tác dụng. Nhóm hẹp đang xanh **và** bắt được lỗi thật (xem ngay dưới) |
@@ -541,18 +527,18 @@ xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng m
 
 ### Khi KHÔNG có runner / KHÔNG đủ quyền — vẫn lấy được phần lớn giá trị
 
-**Cách kiểm "có runner không" mà không cần quyền gì:** push một `.gitlab-ci.yml` tối giản rồi nhìn
-Pipelines. Job mang nhãn **`stuck`** + `Pending` ⇒ **không có runner** (job tạo ra nhưng không ai nhận).
-Đây là kiểm nghiệm thực chứng — hơn hẳn việc đoán qua menu.
+**Kiểm CI có chạy thật không** trước khi tin nó: push một workflow tối giản rồi xem tab Actions.
+- **Không có run nào xuất hiện** ⇒ Actions đang tắt cho repo/tổ chức (hoặc `on:` không khớp sự kiện).
+- **Job nằm `Queued` mãi** ⇒ không runner nào khớp nhãn `runs-on` (runner tự dựng chưa đăng ký, hoặc sai nhãn).
 
-★**Một trường hợp có thật đáng nhớ:** trong lịch sử pipeline của repo có một job hỏng từ **hai tháng
-trước**, ai cũng tưởng là lỗi code nên không ai đụng tới. Đọc kỹ thì nó cũng chỉ mang nhãn `stuck` rồi
-hết giờ chờ — tức là **chưa từng có runner nào**, code chưa hề được chạy lấy một lần. Bài học: *nhãn
-trạng thái của pipeline là dữ liệu chẩn đoán, đọc nó trước khi kết luận về code.*
+★**Một trường hợp có thật đáng nhớ** (quan sát trên một CI tự dựng, không phải GitHub): trong lịch sử
+pipeline có một job hỏng từ **hai tháng trước**, ai cũng tưởng là lỗi code nên không ai đụng tới. Đọc kỹ
+thì job chỉ nằm chờ rồi hết giờ, tức là **chưa từng có runner nào nhận**, code chưa hề được chạy lấy một
+lần. Bài học: *trạng thái của pipeline là dữ liệu chẩn đoán, đọc nó trước khi kết luận về code.*
 
-**Cách biết mình có quyền dựng runner không:** trong GitLab, mục **`Settings`** ở sidebar **chỉ hiện với
-Maintainer/Owner**. Sidebar đi thẳng từ `Analyze` → `Help` mà không có `Settings` ⇒ đang là Developer.
-Chắc chắn hơn thì mở thẳng `/-/settings/ci_cd` — 404/403 là câu trả lời.
+**Cách biết mình có đủ quyền dựng G2/G3 không** (đăng ký runner tự dựng, khoá nhánh cần quyền admin repo):
+`gh api repos/<owner>/<repo> --jq .permissions.admin` → `true`/`false`. Kiểm trước khi thiết kế quy trình
+dựa vào khoá nhánh, đừng đợi tới lúc bấm thì gặp 403/404.
 
 **Phương án không cần quyền: git hook `pre-push`** gọi đúng `scripts/check.sh`.
 
@@ -570,88 +556,3 @@ Chắc chắn hơn thì mở thẳng `/-/settings/ci_cd` — 404/403 là câu tr
 Thay đổi đắt nhất **không phải công cụ** mà là **thói quen nhánh**: từ nhánh cá nhân dài hạn
 (`dev-<tên>`, push thẳng) sang nhánh feature ngắn cắt từ mainline. Chưa sẵn sàng đổi thói quen đó thì
 làm G1+G2 trước — đã lấy được phần lớn giá trị mà chưa phải đổi cách làm việc.
-
----
-
-## 11c. [OPT] Hệ sinh thái nhiều repo — khi §11b phải trải ra trên >1 repo
-
-★ **Cảnh báo mức bằng chứng (theo L6 ở CLAUDE.md):** khác với §11b — vốn mô tả một hệ thống đang chạy
-thật — mục §11c này là **tổng hợp từ khảo sát thực hành ngành + suy luận logic**, chưa có xác nhận đã
-chạy đúng nguyên trạng trong một project cụ thể. Áp dụng thật thì tự thêm dòng "đã verify ngày <DATE>"
-theo L5, đừng đọc nó với cùng mức tin cậy như phần quan sát được.
-
-
-**[TRIGGER] kích hoạt mục này khi:** ≥2 trong số các repo **thật sự phụ thuộc lẫn nhau** — đổi API/schema
-ở repo này thường kéo theo việc phải đổi ở repo kia. **Chưa cần** nếu 3 project chỉ tình cờ cùng một
-người quản lý nhưng độc lập hoàn toàn (không gọi nhau, không chia schema) — lúc đó áp §11b riêng cho
-từng repo là đủ, đừng phức tạp hoá.
-
-### Bước 0 — quyết định monorepo hay polyrepo, và **ghi lại như một ADR**
-
-Đây không phải câu hỏi công cụ, mà là đánh đổi thật, và nên trace được như mọi quyết định khác (L1–L4):
-
-| | Monorepo (gộp 3 vào 1 repo) | Polyrepo (giữ 3 repo riêng) |
-|---|---|---|
-| Agent thấy được gì | Toàn bộ 3 project trong một context — sửa xuyên repo trong **một PR** | Agent ở repo A không thấy ai đang tiêu thụ code nó vừa sửa; đổi xuyên repo cần điều phối thêm |
-| Chi phí hạ tầng | Phải đầu tư liên tục (build cache, CI phân vùng theo thư mục) theo kịp quy mô, không thì PR review time giãn ra không đoán được | Mỗi repo tự chủ CI/release riêng, chi phí hạ tầng thấp hơn nhưng đổi xuyên repo cần N PR đồng bộ |
-| Hợp khi | 3 project phụ thuộc chéo nhiều, đổi thường kéo cả 3, bạn là người/agent duy nhất vận hành | 3 project release lệch nhịp nhau, sau này có thể tách quyền truy cập/đội ngũ riêng cho từng cái |
-| Không hợp khi | Bạn chưa sẵn sàng đầu tư tooling build/CI phân vùng — monorepo không tự nhiên rẻ | 3 project đổi API cùng lúc thường xuyên — chi phí điều phối N-PR ăn hết lợi ích tách repo |
-
-★ Mặc định đề xuất cho "một người + agent, 3 project phụ thuộc chéo, tốc độ cao": **monorepo** — agent
-sửa xuyên 3 project trong một PR, một `make check` chạy được cả 3. Đổi ý sau này (tách ra) vẫn dễ hơn
-chiều ngược lại.
-
-Nếu chọn polyrepo, phần dưới đây áp dụng.
-
-### Một repo "hub" giữ Tier 0 — các repo code chỉ LINK, không copy
-
-Vi phạm L2 điển hình khi có nhiều repo: mỗi repo tự có một bản `glossary.md`/`adr-log.md` riêng, rồi
-lệch nhau dần. Xử lý: tạo một repo thứ 4 (`<eco>-docs`), chuyển toàn bộ Tier 0 — `glossary.md`,
-`adr-log.md`, `context-map.md`, `constitution.md` (§11b), `README.md` (Doc Index) — về đó. Mỗi repo code
-chỉ giữ một file mỏng trỏ sang:
-
-```markdown
-<!-- docs/POINTER.md trong từng repo con -->
-Tài liệu nền tảng của hệ sinh thái sống ở <eco>-docs, KHÔNG lặp lại ở đây:
-- Glossary: <link> · ADR Log: <link> · Context Map: <link> · Constitution: <link>
-Tài liệu CHỈ RIÊNG repo này (algorithm.md, interface.md...) vẫn ở docs/ như bình thường.
-```
-
-**Context Map đổi vai trò:** trước đây (1 repo) nó vẽ ranh giới với thế giới ngoài; giờ nó vẽ **ranh
-giới giữa 3 project của chính bạn** — cái gì thuộc repo nào, ai gọi ai, qua hợp đồng nào (Interface
-Control Document — Tier 2/3, không còn là tuỳ chọn ở mức M, xem §4).
-
-### ID cấp hệ sinh thái — thêm một tầng, không thay tầng cũ
-
-`GLOSS-<PROJ>-001` chỉ có nghĩa trong phạm vi 1 project. Thêm tầng `GLOSS-ECO-001` cho thuật ngữ **dùng
-chung cả 3** (tên miền nghiệp vụ, thực thể xuyên repo); giữ nguyên `GLOSS-<PROJ>-001` cho thuật ngữ chỉ
-riêng 1 repo. Cùng quy tắc cho `ADR-ECO-*` (quyết định ảnh hưởng ≥2 repo, vd chọn giao thức giữa các
-service) so với `ADR-<PROJ>-*` (quyết định nội bộ 1 repo).
-
-### Issue liên-repo — `Closes owner/repo#N` phải viết rõ, không tự nhiên hoạt động
-
-`Closes #NN` trong PR chỉ tự đóng Issue **cùng repo**. GitHub hỗ trợ `Closes owner/repo-khac#12` để đóng
-Issue ở repo khác, nhưng nếu không quy ước rõ trong template `agent-ready`, Issue liên-repo sẽ bị quên.
-Thêm một trường bắt buộc vào SPEC (§11b) khi việc động tới >1 repo: **"Repo liên quan"** — liệt kê hết,
-mỗi repo một Issue riêng, trỏ nhau bằng `Blocked by owner/repo#N` / `Blocks owner/repo#N`.
-
-### CI dùng chung — reusable workflow, không copy-paste YAML
-
-Tương đương "runner cấp GROUP" đã nói cho GitLab (§11b): trên GitHub, đặt `scripts/check.sh` (G1) và
-workflow gốc trong repo hub hoặc một repo `.github` cấp tổ chức, 3 repo con gọi lại bằng:
-```yaml
-jobs:
-  check:
-    uses: <org>/<eco>-docs/.github/workflows/check.yml@main
-```
-Một nơi định nghĩa cổng, ba nơi gọi — đúng nguyên tắc "CI chạy đúng script mà người chạy ở máy" (bảng
-quyết định ở §11b), chỉ mở rộng từ 1 repo ra N repo.
-
-### Khi nào tính lại quy mô S→M
-
-Có hệ sinh thái ≥2 repo phụ thuộc chéo là điều kiện "domain thứ 2 sắp lên" trong bảng §2 đã xảy ra thật
-— tự động đẩy quy mô tài liệu từ **S lên M**: Tier 0 tách file hẳn (không gộp như mức S nữa), PR review
-bắt buộc cho `docs/**` ở repo hub, Doc Index có trạng thái Draft/In Review/Approved.
-
----
-
