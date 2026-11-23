@@ -418,7 +418,8 @@ thật): `GIT-FLOW.md` §11b "Kích hoạt O7-A giữa chừng".
 
 Chi tiết O7-A (Issue = đặc tả + đơn vị nghiệm thu · PR = đơn vị review · phán quyết nghiệm thu tất định
 = chấp nhận · merge = ghi nhận) ở **`GIT-FLOW.md`** cạnh file này. **Chỉ đọc khi đã chọn O7-A** hoặc đang
-cân nhắc chuyển sang — dùng O7-B thì đừng nạp nó vào context.
+cân nhắc chuyển sang — dùng O7-B thì đừng nạp nó vào context. Ngoại lệ: mục "Bộ công cụ agent khi dựng
+O7-A" — phần Playwright MCP áp cho mọi project có UI (AGENT.md §4.4), đọc riêng mục đó.
 
 ---
 

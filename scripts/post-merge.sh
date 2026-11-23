@@ -29,14 +29,17 @@ pr() { gh pr view "$PR" --json "$1" -q "$2"; }
 
 repo_root="$(git rev-parse --show-toplevel)"; cd "$repo_root"
 main_wt="$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10); exit}')"
-this_repo="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
+this_repo="$(gh repo view --json nameWithOwner -q .nameWithOwner | tr '[:upper:]' '[:lower:]')"   # GitHub không phân biệt hoa/thường
 
 # ── 0. Kiểm trước ────────────────────────────────────────────────────────────
 [ "$(pr state .state)" = MERGED ] || die "PR #$PR chưa MERGED — không đóng/không dọn gì."
 # Còn check chưa xong (queued/in-progress/pending) ⇒ chưa có phán quyết cuối — dừng, không so "mới nhất"
 # (gh trả completedAt của run chưa xong là 0001-01-01…, sẽ thua run cũ đã xong).
-pending="$(pr statusCheckRollup '[.statusCheckRollup[] | select((.status // "COMPLETED") != "COMPLETED" or .state == "PENDING" or .state == "EXPECTED") | (.name // .context)] | join(", ")')"
-[ -z "$pending" ] || die "PR #$PR còn check chưa chạy xong: $pending — chờ phán quyết rồi chạy lại. Chưa đóng gì."
+# EXPECTED = check BẮT BUỘC mà không ai post (vd workflow bị lọc paths) — chờ không bao giờ tự hết ⇒ báo riêng.
+expected="$(pr statusCheckRollup '[.statusCheckRollup[] | select(.state == "EXPECTED") | (.name // .context)] | join(", ")')"
+[ -z "$expected" ] || die "PR #$PR có check bắt buộc KHÔNG BAO GIỜ được chạy (EXPECTED): $expected — chờ không tự hết; xử lý tay (chạy lại workflow, hoặc xác nhận check không áp cho PR này rồi đóng vòng tay). Chưa đóng gì."
+pending="$(pr statusCheckRollup '[.statusCheckRollup[] | select((.status // "COMPLETED") != "COMPLETED" or .state == "PENDING") | (.name // .context)] | join(", ")')"
+[ -z "$pending" ] || die "PR #$PR còn check đang chờ/chạy: $pending — chờ phán quyết rồi chạy lại (QUEUED mãi, vd job chờ duyệt environment bị bỏ ⇒ xử lý tay). Chưa đóng gì."
 # Mới nhất theo (workflow, tên job): 2 workflow cùng có job `check` là 2 phán quyết riêng, không che nhau.
 LATEST='[.statusCheckRollup | group_by([(.workflowName // ""), (.name // .context)])[] | max_by(.completedAt // .startedAt // "")]'
 n_checks="$(pr statusCheckRollup "$LATEST | length")"
@@ -52,8 +55,8 @@ clean=0; wt=""
 if [[ "$head" == agent/* ]] && [ "$cross" = false ]; then
   clean=1
   wt="$(git worktree list --porcelain | awk -v b="refs/heads/$head" '/^worktree /{w=substr($0,10)} $0=="branch " b {print w}')"
-  [ "$wt" != "$repo_root" ] || die "Đang đứng TRONG worktree sẽ bị xoá ($wt) — chạy lại từ worktree chính ($main_wt). Chưa đóng gì."
   [ "$wt" != "$main_wt" ] || die "Nhánh '$head' đang checkout ở worktree chính ($main_wt) — checkout nhánh khác rồi chạy lại. Chưa đóng gì."
+  [ "$wt" != "$repo_root" ] || die "Đang đứng TRONG worktree sẽ bị xoá ($wt) — chạy lại từ worktree chính ($main_wt). Chưa đóng gì."
   [ -z "$wt" ] || [ -z "$(git -C "$wt" status --porcelain)" ] || die "Worktree $wt còn thay đổi chưa commit — xử lý tay rồi chạy lại (không --force). Chưa đóng gì."
 else
   echo "  · Sẽ KHÔNG dọn nhánh '$head': chỉ dọn nhánh agent/* của chính repo (cross-repo=$cross)."
@@ -65,7 +68,7 @@ refs="$(pr closingIssuesReferences '.closingIssuesReferences[] | "\(.repository.
 [ -n "$refs" ] || echo "  (không có)"
 closed_local=""; closed_refs=""
 for ref in $refs; do
-  repo="${ref%#*}"; n="${ref#*#}"
+  ref="$(tr '[:upper:]' '[:lower:]' <<<"$ref")"; repo="${ref%#*}"; n="${ref#*#}"
   st="$(gh issue view "$n" -R "$repo" --json state -q .state)"
   if [ "$repo" = "$this_repo" ]; then
     if ! git ls-tree -r --name-only "origin/$base" -- acceptance/ | grep -qE "^acceptance/$n-[^/]*\.sh$"; then
@@ -98,7 +101,7 @@ for epic in $epics; do
   fi
   tasks="$(gh issue view "$epic" --json body -q .body | grep -oE '^[[:space:]]*[-*] \[[ xX]\] ([[:alnum:]_.-]+/[[:alnum:]_.-]+)?#[0-9]+\b' \
             | grep -oE '([[:alnum:]_.-]+/[[:alnum:]_.-]+)?#[0-9]+$' | sed -E "s|^#|$this_repo#|" || true)"
-  children="$(printf '%s\n%s\n' "$subs" "$tasks" | grep -E '^[[:alnum:]_.-]+/[[:alnum:]_.-]+#[0-9]+$' | sort -u || true)"
+  children="$(printf '%s\n%s\n' "$subs" "$tasks" | tr '[:upper:]' '[:lower:]' | grep -E '^[[:alnum:]_.-]+/[[:alnum:]_.-]+#[0-9]+$' | sort -u || true)"
   touches=0; unlinked=""
   for n in $closed_local; do
     if grep -qxF "$this_repo#$n" <<<"$children"; then touches=1

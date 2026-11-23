@@ -249,7 +249,8 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
 
 ### Bộ công cụ agent khi dựng O7-A — superpowers (viết plan) + Playwright MCP (xem giao diện)
 
-**Áp ở project dùng playbook này, không phải ở repo playbook.** Cả hai đều phải **ghim phiên bản**. Không
+**Áp ở project dùng playbook này, không phải ở repo playbook.** Mục này đọc riêng được: phần Playwright MCP
+áp cho **mọi** project có UI, kể cả O7-B (CLAUDE.md §11b). Cả hai đều phải **ghim phiên bản**. Không
 dùng `@latest`, không dùng nhánh `main` của GitHub: thứ trôi theo upstream thì không cho phán quyết tất
 định (AGENT.md §4.1).
 
@@ -289,7 +290,7 @@ thuộc, và trình duyệt.
 npm install --prefix tools/playwright-mcp     # lần đầu: sinh package-lock.json → commit
 npm ci --prefix tools/playwright-mcp          # mọi máy sau: cài ĐÚNG theo lockfile
 node tools/playwright-mcp/node_modules/playwright-core/cli.js install chromium   # Chromium do playwright-core ghim
-echo 'tools/playwright-mcp/node_modules/' >> .gitignore; echo '.playwright-mcp/' >> .gitignore
+for l in 'tools/playwright-mcp/node_modules/' '.playwright-mcp/'; do grep -qxF "$l" .gitignore 2>/dev/null || echo "$l" >> .gitignore; done
 ```
 
 ★ `--browser chromium` là bắt buộc. Không có nó, MCP dùng Chrome hệ thống, mà Chrome tự cập nhật. Số đo
@@ -313,8 +314,10 @@ workflow `plan-to-issues.yml` gọi `scripts/plan-to-issues.py`:
 Story được link vào epic hai đường (sub-issue + task-list) — `post-merge.sh` đóng epic khi story cuối
 xong. **Từ chối thay vì đoán:** plan thiếu H1/Goal/`**Files:**`, hoặc task không có cặp `Expected: … PASS`
 (= task không có đơn vị nghiệm thu) ⇒ job đỏ, **không tạo Issue nào**; plan còn thay đổi chưa commit ⇒ từ
-chối; task `Consumes:` trỏ task không đứng trước ⇒ từ chối; plan đã raise bị đổi tên/di chuyển ⇒ job đỏ
-(marker theo path — xử lý như plan mới sẽ raise trùng). Chạy lại an toàn: marker ẩn — Issue đã raise thì bỏ
+chối; task `Consumes:` trỏ task không đứng trước ⇒ từ chối; plan đã raise bị đổi tên/di chuyển ⇒ từ chối
+(marker theo path nên path mới trông như plan mới; dấu hiệu tất định: có epic **đang mở** cùng tên mà plan
+của nó đã biến mất ⇒ trả về path cũ, hoặc đóng epic cũ "superseded" rồi chạy lại). Mỗi plan trong một push
+xử lý độc lập — plan đỏ không làm bỏ sót plan khác. Chạy lại an toàn: marker ẩn — Issue đã raise thì bỏ
 qua; body epic chỉ được **nối** dòng story còn thiếu, không viết lại (giữ `[x]`, con thêm tay). Chạy tay:
 `scripts/plan-to-issues.py <plan> --dry-run`.
 

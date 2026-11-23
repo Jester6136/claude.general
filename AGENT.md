@@ -143,7 +143,7 @@ khi viết test đầu tiên, đừng để dồn.
 ### 4.4 Giao diện — Playwright MCP để NHÌN, Playwright test để PHÁN QUYẾT
 
 Project có giao diện thì dựng Playwright MCP **ghim phiên bản** (cách dựng + vì sao ghim: GIT-FLOW.md §
-"Bộ công cụ agent khi dựng O7-A"). Agent dùng nó để **xem** UI và **sinh finding**, như `/code-review`. Mỗi finding
+"Bộ công cụ agent khi dựng O7-A" — đọc riêng mục đó, kể cả khi dùng O7-B). Agent dùng nó để **xem** UI và **sinh finding**, như `/code-review`. Mỗi finding
 về giao diện → một test Playwright dạng script (cùng `playwright-core` đã khoá, viewport cố định, tắt
 animation, dữ liệu/đồng hồ cố định, backend fake/replay) đặt trong đơn vị nghiệm thu — **đó** mới là phán
 quyết. So ảnh chụp: ảnh baseline là snapshot đóng băng (luật N2: chụp lại baseline = lần nghiệm thu mới,

@@ -21,8 +21,8 @@ SKILL.md, cập nhật PINNED_* bên dưới, chạy lại bộ kiểm (GIT-FLOW
 
 Chạy lại an toàn: mỗi Issue mang marker ẩn `<!-- plan-to-issues: plan=<path> task=<N|epic> -->`; Issue đã có
 thì bỏ qua (không sửa); body epic chỉ được NỐI thêm dòng story còn thiếu, không viết lại. Plan đã raise mà
-cần đổi thì sửa Issue tay hoặc viết plan mới. Plan đã raise KHÔNG được đổi tên/di chuyển (marker theo path —
-workflow từ chối rename).
+cần đổi thì sửa Issue tay hoặc viết plan mới. Plan đã raise bị đổi tên/di chuyển (marker theo path) ⇒ phát hiện
+qua epic ĐANG MỞ cùng tên mà plan cũ đã biến mất ⇒ từ chối, không raise trùng.
 """
 import json
 import os
@@ -42,13 +42,18 @@ def check_pin():
     từ chối (plan có thể theo định dạng khác). Repo này không cài (CI, máy chưa bật) ⇒ chỉ áp định dạng của
     PINNED_VERSION. Bản cài cho repo KHÁC không tính."""
     try:
-        entries = json.load(open(INSTALLED)).get("plugins", {}).get(PINNED_PLUGIN, [])
+        with open(INSTALLED) as f:
+            entries = json.load(f).get("plugins", {}).get(PINNED_PLUGIN, [])
     except FileNotFoundError:
         entries = []
-    # Chỉ bản ÁP VÀO repo này: scope user, hoặc scope project/local của đúng thư mục repo này.
+    except (OSError, ValueError) as e:
+        sys.exit(f"✗ không đọc được {INSTALLED} ({e}) — sửa/xoá file đó rồi chạy lại")
+    # Chỉ bản ÁP VÀO repo này, theo thứ tự ưu tiên của Claude Code: project/local của đúng thư mục repo
+    # này che bản scope user. Bản cài cho repo khác không tính.
     root = os.path.realpath(sh("git", "rev-parse", "--show-toplevel").strip())
-    entries = [e for e in entries if e.get("scope") == "user"
-               or os.path.realpath(e.get("projectPath") or "/nonexistent") == root]
+    mine = [e for e in entries if e.get("scope") in ("project", "local")
+            and os.path.realpath(e.get("projectPath") or "/nonexistent") == root]
+    entries = mine or [e for e in entries if e.get("scope") == "user"]
     if not entries:
         return f"(repo này không cài {PINNED_PLUGIN} — chỉ kiểm định dạng theo {PINNED_VERSION})"
     versions = sorted({e.get("version") for e in entries})
@@ -190,6 +195,8 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dry = "--dry-run" in sys.argv
     if "--check-pin" in sys.argv:
+        if len(sys.argv) != 2:
+            sys.exit("✗ --check-pin chạy một mình (không kèm plan/--dry-run) — raise plan đã tự chạy check-pin")
         print(check_pin())
         return
     if len(args) != 1:
@@ -213,7 +220,7 @@ def main():
 
     # Đọc ĐỦ mọi trang (không cắt ở N issue) — thiếu một trang là raise trùng epic/story.
     existing = [json.loads(l) for l in sh("gh", "api", "--paginate", f"repos/{repo}/issues?state=all&per_page=100",
-                                           "--jq", ".[] | select(.pull_request == null) | {number, body}").splitlines() if l]
+                                           "--jq", ".[] | select(.pull_request == null) | {number, title, state, body}").splitlines() if l]
     def find(task):
         mk = MARK.format(path=path, task=task)
         hits = [i["number"] for i in existing if mk in (i["body"] or "")]
@@ -231,6 +238,21 @@ def main():
             sh("gh", "label", "create", lb, "--color", color, check=False)  # đã có thì bỏ qua
 
     epic_no = find("epic")
+    if not epic_no:
+        # Plan bị ĐỔI TÊN/DI CHUYỂN? Marker theo path ⇒ path mới trông như plan mới ⇒ raise TRÙNG. Dấu hiệu
+        # (tất định, không phụ thuộc diff của một lần push): có epic ĐANG MỞ cùng tiêu đề, mà plan của nó không
+        # còn tồn tại ở HEAD. Epic cũ đã đóng ⇒ viết plan mới cùng tên là hợp lệ.
+        alive = set(sh("git", "ls-tree", "-r", "--name-only", "HEAD").splitlines())
+        orphans = []
+        for i in existing:
+            m = re.search(r"<!-- plan-to-issues: plan=(\S+) task=epic -->", i["body"] or "")
+            if (m and m.group(1) != path and m.group(1) not in alive and i.get("state") in ("open", "OPEN")
+                    and i.get("title") == f"[Epic] {plan['feature']}"):
+                orphans.append(f"#{i['number']} (plan cũ: {m.group(1)})")
+        if orphans:
+            sys.exit(f"✗ {path}: có epic đang mở cùng tên mà plan đã biến mất — {', '.join(orphans)}. Nhiều khả năng "
+                     f"plan bị đổi tên/di chuyển ⇒ raise tiếp sẽ TRÙNG. Trả plan về đường dẫn cũ, HOẶC đóng epic cũ "
+                     f"(ghi 'superseded by {path}') rồi chạy lại. KHÔNG tạo Issue nào.")
     if epic_no:
         print(f"  ✓ epic đã có: #{epic_no}")
     else:
@@ -257,10 +279,15 @@ def main():
     # Link 2 đường: task-list trong body epic + sub-issue API (đã link thì API trả 422 — bỏ qua).
     # Body epic KHÔNG viết lại: chỉ NỐI dòng của story chưa có — giữ dấu [x], con thêm tay, ghi chú.
     body = sh("gh", "issue", "view", str(epic_no), "--json", "body", "-q", ".body")
-    have = {int(x) for x in re.findall(r"^\s*[-*] \[[ xX]\] #(\d+)\b", body, re.M)}
+    task_re = re.compile(r"^\s*[-*] \[[ xX]\] (?:([\w.-]+/[\w.-]+))?#(\d+)\b", re.M)
+    have = {int(m.group(2)) for m in task_re.finditer(body) if not m.group(1) or m.group(1).lower() == repo.lower()}
     missing = [f"- [ ] #{no} Task {n}: {name}" for n, name, no in stories if no not in have]
     if missing:
-        body = re.sub(r"\n- \(chưa có story\)\s*$", "", body.rstrip("\n")) + "\n" + "\n".join(missing) + "\n"
+        body = re.sub(r"\n- \(chưa có story\)[ \t]*(?=\n|$)", "", body)
+        last = list(task_re.finditer(body))
+        cut = body.index("\n", last[-1].end()) + 1 if last and "\n" in body[last[-1].end():] else len(body)
+        head, tail = body[:cut], body[cut:]
+        body = head.rstrip("\n") + "\n" + "\n".join(missing) + "\n" + tail   # chèn NGAY sau dòng task cuối
         sh("gh", "issue", "edit", str(epic_no), "--body", body)
     for _, _, no in stories:
         iid = sh("gh", "api", f"repos/{repo}/issues/{no}", "-q", ".id").strip()

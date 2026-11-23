@@ -32,17 +32,19 @@ jobs:
           BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
+          # --no-renames: plan đổi tên hiện là A (path mới). Phát hiện đổi tên nằm trong script (epic đang mở cùng
+          # tên mà plan cũ đã biến mất) — dựa trên marker, không dựa diff của MỘT lần push.
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            changed="$(git diff-tree --root --no-commit-id --name-only --diff-filter=AM -r HEAD -- 'docs/superpowers/plans/*.md')"
+            changed="$(git diff-tree --root --no-commit-id --no-renames --name-only --diff-filter=AM -r HEAD -- 'docs/superpowers/plans/*.md')"
           else
-            # Plan đổi tên/di chuyển = đỏ: marker theo path ⇒ xử lý như plan mới sẽ raise TRÙNG epic/story.
-            renamed="$(git diff --name-status -M --diff-filter=R "$BEFORE..HEAD" -- 'docs/superpowers/plans/*.md')"
-            [ -z "$renamed" ] || { echo "::error::Plan bị đổi tên/di chuyển — không raise (sẽ trùng Issue). Hoàn nguyên tên cũ, hoặc viết plan mới:"; echo "$renamed"; exit 1; }
-            changed="$(git diff --name-only -M --diff-filter=AM "$BEFORE..HEAD" -- 'docs/superpowers/plans/*.md')"
+            changed="$(git diff --no-renames --name-only --diff-filter=AM "$BEFORE..HEAD" -- 'docs/superpowers/plans/*.md')"
           fi
           [ -n "$changed" ] || { echo "Không có plan thêm/sửa (chỉ xoá?) — không raise gì."; exit 0; }
-          printf '%s\n' "$changed" | while read -r plan; do
+          # Mỗi plan độc lập: một plan đỏ KHÔNG làm bỏ sót plan khác trong cùng push; job đỏ nếu có plan đỏ.
+          failed=""
+          while read -r plan; do
             echo "::group::$plan"
-            python3 scripts/plan-to-issues.py "$plan"
+            python3 scripts/plan-to-issues.py "$plan" || { failed="$failed $plan"; echo "::error file=$plan::plan-to-issues ĐỎ"; }
             echo "::endgroup::"
-          done
+          done <<<"$changed"
+          [ -z "$failed" ] || { echo "Plan ĐỎ:$failed"; exit 1; }
