@@ -6,8 +6,8 @@ name: plan-to-issues
 # job ĐỎ, không tạo Issue nào. Xem GIT-FLOW.md § "Plan → Epic/Story".
 
 # [OPT] Mặc định post-merge.sh (bước 2b) đã raise plan của PR ở máy — nên workflow này mặc định CHỈ chạy tay
-# (workflow_dispatch: raise plan đổi trong commit HEAD). Muốn CI tự raise thay cho bước 2b: bỏ comment khối
-# `push` dưới đây VÀ tắt bước 2b — KHÔNG bật cả hai (2 nơi cùng raise có thể đua nhau tạo trùng).
+# (workflow_dispatch trên main: raise plan đổi trong commit HEAD). Muốn CI tự raise thay cho bước 2b: bỏ comment
+# khối `push` dưới đây — post-merge.sh thấy `push:` ở file này thì TỰ bỏ bước 2b (không để 2 nơi cùng raise).
 on:
   workflow_dispatch:
   # push:
@@ -24,6 +24,8 @@ concurrency:
 
 jobs:
   raise:
+    # Chạy tay chọn được nhánh bất kỳ — chỉ raise plan ĐÃ merge vào main (plan trên nhánh nháp chưa qua review).
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -39,7 +41,8 @@ jobs:
           # --no-renames: plan đổi tên hiện là A (path mới). Phát hiện đổi tên nằm trong script (epic đang mở cùng
           # tên mà plan cũ đã biến mất) — dựa trên marker, không dựa diff của MỘT lần push.
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then   # chạy tay / push đầu
-            changed="$(git diff-tree --root --no-commit-id --no-renames --name-only --diff-filter=AM -r HEAD -- 'docs/superpowers/plans/*.md')"
+            # -m --first-parent: HEAD thường là commit MERGE — diff-tree trơn in rỗng với commit merge.
+            changed="$(git diff-tree --root -m --first-parent --no-commit-id --no-renames --name-only --diff-filter=AM -r HEAD -- 'docs/superpowers/plans/*.md')"
           else
             changed="$(git diff --no-renames --name-only --diff-filter=AM "$BEFORE..HEAD" -- 'docs/superpowers/plans/*.md')"
           fi

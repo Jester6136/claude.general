@@ -10,20 +10,29 @@
 set -euo pipefail
 echo "── pre-push: cổng tĩnh + nghiệm thu tất định (bỏ qua: git push --no-verify) ──"
 repo_root="$(git rev-parse --show-toplevel)"
-"$repo_root/scripts/check.sh" --naming
-"$repo_root/scripts/check.sh" --syntax
-"$repo_root/scripts/check.sh" --boundary
-"$repo_root/scripts/check.sh" --lint
-# Nghiệm thu theo ĐÚNG ref đang push (stdin: <local ref> <local sha> <remote ref> <remote sha>), không theo
-# nhánh đang đứng: `git push origin agent/43-x` khi đang ở agent/42-y phải đòi đơn vị của #43, không phải #42.
+# Đọc danh sách ref git đưa qua stdin NGAY ĐẦU (<local ref> <local sha> <remote ref> <remote sha>) — các cổng
+# bên dưới thừa hưởng stdin, một lệnh đọc stdin (vd `docker compose exec` không -T) sẽ nuốt mất danh sách.
+refs="$(cat)"
+"$repo_root/scripts/check.sh" --naming </dev/null
+"$repo_root/scripts/check.sh" --syntax </dev/null
+"$repo_root/scripts/check.sh" --boundary </dev/null
+"$repo_root/scripts/check.sh" --lint </dev/null
+# Theo ĐÚNG ref đang push, không theo nhánh đang đứng. Lấy tên ở phía REMOTE (thứ sẽ thành nhánh PR):
+# `git push origin wip:agent/43-x` phải đòi đơn vị #43 và tên nhánh phải ASCII (AGENT.md §9) dù local là `wip`.
 # Giới hạn: đơn vị chạy trên working tree hiện tại (hook không checkout ref được push).
-ids=""
-while read -r local_ref _ _ _; do
-  n="$(sed -nE 's#^refs/heads/agent/([0-9]+)-.*#\1#p' <<<"$local_ref")"
+ids=""; bad=""
+while read -r local_ref _ remote_ref _; do
+  [ -n "$local_ref" ] || continue
+  [ "$local_ref" != "(delete)" ] || continue   # xoá nhánh từ xa — không có gì để kiểm
+  name="${remote_ref:-$local_ref}"
+  ! LC_ALL=C grep -q '[^ -~]' <<<"$name" || bad="$bad $name"
+  n="$(sed -nE 's#^refs/heads/agent/([0-9]+)-.*#\1#p' <<<"$name")"
+  [ -n "$n" ] || n="$(sed -nE 's#^refs/heads/agent/([0-9]+)-.*#\1#p' <<<"$local_ref")"
   [ -z "$n" ] || ids="$ids $n"
-done
+done <<<"$refs"
+[ -z "$bad" ] || { echo "  ✗ tên nhánh đang push có ký tự ngoài ASCII:$bad — tên nhánh LUÔN tiếng Anh không dấu (AGENT.md §9)"; exit 1; }
 if [ -n "$ids" ]; then
-  ACCEPTANCE_REQUIRED_IDS="$ids" "$repo_root/scripts/check.sh" --acceptance
+  ACCEPTANCE_REQUIRED_IDS="$ids" "$repo_root/scripts/check.sh" --acceptance </dev/null
 else
-  PR_BODY="" "$repo_root/scripts/check.sh" --acceptance   # không push nhánh agent/* ⇒ không đòi Issue nào, chỉ chạy các đơn vị
+  PR_BODY="" "$repo_root/scripts/check.sh" --acceptance </dev/null   # không push nhánh agent/* ⇒ không đòi Issue nào, chỉ chạy các đơn vị
 fi

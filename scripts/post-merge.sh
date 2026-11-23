@@ -19,8 +19,8 @@
 #      báo, KHÔNG đóng epic. Đóng khi mọi con đã đóng VÀ acceptance/epic/<E>/*.sh XANH (worktree tạm ở
 #      origin/<base>, 2 lần, flaky = đỏ).
 #   2b. PLAN: plan `docs/superpowers/plans/*.md` mà PR thêm/sửa ⇒ `plan-to-issues.py` (worktree tạm ở commit
-#      merge) raise epic/story — thay cho workflow CI. Chạy lại an toàn (marker). PLANS_VIA_CI=1 ⇒ bỏ qua
-#      (project đã bật trigger push của plan-to-issues.yml — không để 2 nơi cùng raise).
+#      merge) raise epic/story — thay cho workflow CI. Chạy lại an toàn (marker). Tự bỏ qua khi
+#      plan-to-issues.yml ở commit merge có trigger `push:` (không để 2 nơi cùng raise); PLANS_VIA_CI=1 ép bỏ qua.
 #   3. Dọn — CHỈ nhánh `agent/*` của chính repo này (không fork, không develop/release): worktree remove
 #      (không --force) → branch -D → xoá nhánh remote.
 #
@@ -38,21 +38,20 @@ pr() { gh pr view "$PR" --json "$1" -q "$2"; }
 # Worktree TẠM detached ở một commit — chạy phán quyết trên đúng commit đó mà không đụng worktree đang làm.
 TMP_WT=""
 drop_tmp() { if [ -n "$TMP_WT" ]; then git worktree remove --force "$TMP_WT" >/dev/null 2>&1 || true; TMP_WT=""; fi; }
-# KHÔNG dùng `trap … EXIT`: bash 3.2 (mặc định macOS) cho script thoát mã 0 khi lỗi `set -u` (biến chưa khai báo)
-# nếu có EXIT trap — cổng chết giữa chừng trông như THÀNH CÔNG (đo 2026-11-23: rc=0). Chỉ bẫy INT/TERM; worktree
-# tạm được dọn tường minh trong at_commit.
+# KHÔNG dùng `trap … EXIT`: bash 3.2 (mặc định macOS) với `set -eu` + BẤT KỲ EXIT trap nào cho script thoát mã 0
+# khi lỗi biến chưa khai báo — cổng chết giữa chừng trông như THÀNH CÔNG (đo 2026-11-23, GIT-FLOW bài học 5).
+# Chỉ bẫy INT/TERM; worktree tạm được dọn tường minh (drop_tmp) sau mỗi lần dùng.
 trap 'drop_tmp; exit 130' INT TERM
-WT_FAIL=125   # mã riêng: KHÔNG dựng được worktree tạm — không phải "nghiệm thu đỏ"
-at_commit() {  # at_commit <sha> <lệnh...> — exit code của lệnh, hoặc $WT_FAIL
-  local sha=$1 rc=0; shift; drop_tmp
-  # Đặt lại trap tại đây: at_commit hay chạy trong $(...) — subshell không thừa hưởng trap của cha, Ctrl-C
-  # giữa chừng sẽ để sót worktree tạm.
-  trap 'drop_tmp; exit 130' INT TERM
-  TMP_WT="$(mktemp -d "${TMPDIR:-/tmp}/post-merge-XXXXXX")" || return "$WT_FAIL"; rmdir "$TMP_WT"
-  git worktree add --quiet --detach "$TMP_WT" "$sha" >/dev/null || { echo "  ✗ không dựng được worktree tạm ở $sha (lỗi git ở trên)" >&2; TMP_WT=""; return "$WT_FAIL"; }
-  ( cd "$TMP_WT" && "$@" ) || rc=$?
-  drop_tmp; return "$rc"
+# Dựng worktree và chạy lệnh TÁCH thành 2 bước: lỗi dựng worktree được báo bằng chính lời gọi mk_tmp (ở shell
+# hiện tại), không lẫn vào exit code của lệnh chạy bên trong (env/check.sh có thể trả bất kỳ mã nào).
+mk_tmp() {  # mk_tmp <sha> — worktree tạm tách rời tại <sha>, đường dẫn ở $TMP_WT; KHÔNG gọi trong $(...)
+  drop_tmp
+  TMP_WT="$(mktemp -d "${TMPDIR:-/tmp}/post-merge-XXXXXX")" || { TMP_WT=""; return 1; }
+  rmdir "$TMP_WT"
+  git worktree add --quiet --detach "$TMP_WT" "$1" >/dev/null </dev/null \
+    || { echo "  ✗ không dựng được worktree tạm ở $1 (lỗi git ở trên)" >&2; TMP_WT=""; return 1; }
 }
+in_tmp() { ( cd "$TMP_WT" && "$@" ); }   # in_tmp <lệnh...> — chạy trong worktree tạm, trả exit code của lệnh
 
 repo_root="$(git rev-parse --show-toplevel)"; cd "$repo_root"
 main_wt="$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10); exit}')"
@@ -89,7 +88,8 @@ pr_files="$(gh api --paginate "repos/{owner}/{repo}/pulls/$PR/files" -q '.[].fil
   || die "Không đọc được danh sách file của PR #$PR — chưa đóng gì."
 # PR sửa CHÍNH cổng phán quyết ⇒ phán quyết dưới đây do cổng của PR tự chấm mình. Không tự tin: người phải
 # đọc diff cổng rồi xác nhận bằng GATE_CHANGE_REVIEWED=1 (dry-run chỉ cảnh báo).
-gate_touched="$(grep -E '^(scripts/check\.sh|scripts/post-merge\.sh|scripts/hooks/)' <<<"$pr_files" | tr '\n' ' ' || true)"
+# Cổng = mọi thứ post-merge CHẠY từ commit merge bằng quyền gh của người vận hành (+ workflow nếu bật CI).
+gate_touched="$(grep -E '^(scripts/check\.sh|scripts/post-merge\.sh|scripts/plan-to-issues\.py|scripts/hooks/|\.github/workflows/)' <<<"$pr_files" | tr '\n' ' ' || true)"
 if [ -n "$gate_touched" ]; then
   echo "⚠ PR #$PR sửa cổng phán quyết: ${gate_touched}— phán quyết dưới đây dùng cổng ĐÃ SỬA."
   [ "$DRY" -eq 1 ] || [ "${GATE_CHANGE_REVIEWED:-}" = 1 ] \
@@ -98,9 +98,9 @@ fi
 
 # PHÁN QUYẾT — chạy lại ở máy, trên chính commit merge (không tin lời khai trong PR, không cần CI).
 echo "· Phán quyết: check.sh --acceptance trên commit merge ${merge_sha:0:7} (worktree tạm) …"
-rc=0; out="$(at_commit "$merge_sha" env PR_BODY="$body" ./scripts/check.sh --acceptance 2>&1)" || rc=$?
+mk_tmp "$merge_sha" || die "Không dựng được worktree tạm để chạy phán quyết (xem lỗi git ở trên) — KHÔNG phải nghiệm thu đỏ. Chưa đóng gì."
+rc=0; out="$(in_tmp env PR_BODY="$body" ./scripts/check.sh --acceptance 2>&1)" || rc=$?; drop_tmp
 printf '%s\n' "$out" | sed -n 's/^\(  [✓✗⊘].*\)$/  \1/p'
-[ "$rc" -ne "$WT_FAIL" ] || die "Không dựng được worktree tạm để chạy phán quyết (xem lỗi git ở trên) — KHÔNG phải nghiệm thu đỏ. Chưa đóng gì."
 [ "$rc" -eq 0 ] || die "Nghiệm thu trên commit merge ${merge_sha:0:7} ĐỎ (exit=$rc) — xem dòng ✗ ở trên. Đơn vị KHÔNG ĐẠT ⇒ nhánh $base đang hỏng, báo người (GIT-FLOW thông báo 4); Issue bị đóng mà thiếu đơn vị ⇒ khai đơn vị. Sửa bằng PR mới. Chưa đóng gì."
 echo "✓ PR #$PR MERGED · nghiệm thu XANH trên ${merge_sha:0:7} · $ci_note — $head → $base"
 
@@ -174,8 +174,8 @@ for epic in $epics; do
   [ -z "$open_children" ] || { echo "  · Epic #$epic còn:$open_children — chưa đóng"; continue; }
   unit_dir="acceptance/epic/$epic"
   if git ls-tree -d --name-only "origin/$base" -- "$unit_dir" | grep -q .; then
-    erc=0; at_commit "origin/$base" env PR_BODY= ACCEPTANCE_DIR="$unit_dir" ./scripts/check.sh --acceptance >/dev/null || erc=$?
-    [ "$erc" -ne "$WT_FAIL" ] || { echo "  ✗ Epic #$epic: không dựng được worktree tạm — chưa đóng (không phải nghiệm thu đỏ)"; continue; }
+    mk_tmp "origin/$base" || { echo "  ✗ Epic #$epic: không dựng được worktree tạm — chưa đóng (không phải nghiệm thu đỏ)"; continue; }
+    erc=0; in_tmp env PR_BODY= ACCEPTANCE_DIR="$unit_dir" ./scripts/check.sh --acceptance >/dev/null || erc=$?; drop_tmp
     [ "$erc" -eq 0 ] || { echo "  ✗ Epic #$epic: mọi con đã đóng nhưng $unit_dir ĐỎ trên origin/$base — chưa đóng"; continue; }
     echo "  ✓ $unit_dir XANH (origin/$base)"
   fi
@@ -185,19 +185,26 @@ done
 # ── 2b. Plan → Epic/Story (thay cho workflow CI) ─────────────────────────────
 echo; echo "2b. Plan (docs/superpowers/plans/) PR này thêm/sửa"
 plans="$(grep -E '^docs/superpowers/plans/[^/]+\.md$' <<<"$pr_files" || true)"
-# Project đã bật workflow plan-to-issues.yml (trigger push) thì tắt bước này — 2 nơi cùng raise đua nhau tạo trùng.
-[ "${PLANS_VIA_CI:-}" != 1 ] || { echo "  · PLANS_VIA_CI=1 — plan do workflow CI raise, bỏ qua bước này"; plans=""; }
+# Project đã bật workflow plan-to-issues.yml (trigger push) thì bỏ bước này — 2 nơi cùng raise đua nhau tạo trùng.
+# Tự nhận biết từ chính commit merge (khối `push:` không bị comment), không trông vào người vận hành nhớ đặt biến;
+# PLANS_VIA_CI=1 vẫn ép bỏ qua được.
+wf=.github/workflows/plan-to-issues.yml
+if [ "${PLANS_VIA_CI:-}" = 1 ] || git show "$merge_sha:$wf" 2>/dev/null | grep -qE '^[[:space:]]+push:'; then
+  [ -z "$plans" ] || echo "  · plan do workflow CI raise ($wf có trigger push, hoặc PLANS_VIA_CI=1) — bỏ qua bước này"
+  plans=""
+fi
 plan_fail=""
 [ -n "$plans" ] || echo "  (không có)"
-while IFS= read -r plan; do
+# Đọc danh sách từ fd 3: lệnh con (python, gh) thừa hưởng stdin sẽ không nuốt mất dòng plan kế tiếp.
+while IFS= read -r plan <&3; do
   [ -n "$plan" ] || continue
   git cat-file -e "$merge_sha:$plan" 2>/dev/null || { echo "  · $plan đã bị xoá trong PR — bỏ qua"; continue; }
   flag=(); [ "$DRY" -eq 1 ] && flag=(--dry-run)
   # PLAN_TO_ISSUES_REPO_ROOT: worktree tạm có đường dẫn khác ⇒ check-pin phải so với repo THẬT.
-  if at_commit "$merge_sha" env PLAN_TO_ISSUES_REPO_ROOT="$repo_root" python3 scripts/plan-to-issues.py "$plan" ${flag[@]+"${flag[@]}"}; then :; else
-    echo "  ✗ $plan: plan-to-issues ĐỎ — không chặn bước dọn, nhưng script sẽ thoát mã 1"; plan_fail="$plan_fail $plan"
-  fi
-done <<<"$plans"
+  if ! mk_tmp "$merge_sha"; then echo "  ✗ $plan: không dựng được worktree tạm — chưa raise"; plan_fail="$plan_fail $plan"; continue; fi
+  prc=0; in_tmp env PLAN_TO_ISSUES_REPO_ROOT="$repo_root" python3 scripts/plan-to-issues.py "$plan" ${flag[@]+"${flag[@]}"} </dev/null || prc=$?; drop_tmp
+  [ "$prc" -eq 0 ] || { echo "  ✗ $plan: plan-to-issues ĐỎ — không chặn bước dọn, nhưng script sẽ thoát mã 1"; plan_fail="$plan_fail $plan"; }
+done 3<<<"$plans"
 
 # ── 3. Dọn worktree + nhánh ──────────────────────────────────────────────────
 echo; echo "3. Dọn nhánh '$head'"

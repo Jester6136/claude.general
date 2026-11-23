@@ -317,8 +317,9 @@ Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthro
 mục ngay trên; **bản ghim = `PINNED_VERSION` trong `scripts/plan-to-issues.py`** — nguồn duy nhất), lưu ở
 `docs/superpowers/plans/YYYY-MM-DD-<feature>.md` (`<feature>` tiếng Anh, `AGENT.md` §9), đi qua PR như mọi tài liệu. **PR chứa plan merge xong** ⇒
 `post-merge.sh` (bước 2b, ở máy, trên commit merge) gọi `scripts/plan-to-issues.py` — không cần CI. Workflow
-`plan-to-issues.yml` là [OPT] thay thế khi có CI: mặc định chỉ chạy tay; bật trigger `push` thì đặt
-`PLANS_VIA_CI=1` khi chạy `post-merge.sh` — **không để hai nơi cùng raise** (đua nhau tạo trùng):
+`plan-to-issues.yml` là [OPT] thay thế khi có CI: mặc định chỉ chạy tay (và chỉ trên `main`); bật trigger
+`push` thì `post-merge.sh` **tự** bỏ bước 2b (đọc file workflow ở commit merge; `PLANS_VIA_CI=1` ép bỏ qua) —
+**không để hai nơi cùng raise** (đua nhau tạo trùng):
 
 | Plan | Thành | Nội dung |
 |---|---|---|
@@ -353,7 +354,7 @@ nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước, từ worktree 
 **nghiệm thu chạy LẠI ở máy trên chính commit merge** (worktree tạm, `PR_BODY` = mô tả PR) **XANH**. Không
 cần CI; nếu PR có check CI [OPT] thì không còn check đang chạy và lần mới nhất của mọi (workflow, job) phải
 SUCCESS. Nghiệm thu trên commit merge ĐỎ ⇒ dừng, không đóng gì, báo người (thông báo 4). PR sửa chính cổng
-(`scripts/check.sh`, `post-merge.sh`, hook) ⇒ phán quyết do cổng đã sửa tự chấm mình ⇒ người đọc diff cổng
+(`scripts/check.sh`, `post-merge.sh`, `plan-to-issues.py`, hook, `.github/workflows/`) ⇒ phán quyết do cổng đã sửa tự chấm mình ⇒ người đọc diff cổng
 rồi chạy với `GATE_CHANGE_REVIEWED=1`. Danh sách file PR lấy qua REST phân trang (không cắt ở 100 file).
 
 | Thứ | Đóng khi | Ai/cái gì đóng |
@@ -545,8 +546,9 @@ xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng m
   kiểm gì. Vì vậy ở `--acceptance`: đơn vị đã khai mà không chạy được (exit 77) là ĐỎ, PR đóng Issue mà
   thiếu đơn vị là ĐỎ; chỉ "repo chưa có đơn vị nào" là SKIP-kèm-cảnh-báo (`AGENT.md` §4.2).
 - **(5) Cổng chết mà báo thành công.** bash 3.2 (mặc định macOS): script có `trap … EXIT` mà gặp lỗi `set -u`
-  (biến chưa khai báo) thì thoát mã **0**, và `$?` trong trap cũng là 0 nên không cứu được. Đo 2026-11-23,
-  `bash -c 'set -u; trap f EXIT; echo "$x"'` → rc=0. Lỗi thật: `"$var—"` (dấu `—` dính vào tên biến) làm
+  (biến chưa khai báo) **cùng `set -e`** thì thoát mã **0**, với BẤT KỲ EXIT trap nào. Đo 2026-11-23 trên
+  `/bin/bash` 3.2.57: file `t.sh` = `set -eu` / `trap "" EXIT` / `echo "$x"` → `bash t.sh; echo $?` in `0`;
+  bỏ dòng trap → `1`; chỉ `set -u` (không `-e`) → `1`. Lỗi thật: `"$var—"` (dấu `—` dính vào tên biến) làm
   `post-merge.sh` chết giữa chừng nhưng báo exit 0. Xử lý: không dùng `trap EXIT` trong cổng (chỉ INT/TERM),
   viết `${var}` khi ngay sau là ký tự không phải ASCII, và kiểm ngược bằng cách cố tình chèn một biến chưa
   khai báo.
