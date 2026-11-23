@@ -5,12 +5,14 @@ name: plan-to-issues
 # đây (CI chỉ gọi script). Chạy lại an toàn: Issue đã raise (marker ẩn) thì bỏ qua. Plan sai định dạng ⇒
 # job ĐỎ, không tạo Issue nào. Xem GIT-FLOW.md § "Plan → Epic/Story".
 
-# [OPT] Mặc định post-merge.sh (bước 2b) đã raise plan của PR ở máy — KHÔNG bật cả hai cùng lúc (2 nơi cùng
-# raise có thể đua nhau tạo trùng). Bật workflow này chỉ khi dùng CI thay cho bước 2b.
+# [OPT] Mặc định post-merge.sh (bước 2b) đã raise plan của PR ở máy — nên workflow này mặc định CHỈ chạy tay
+# (workflow_dispatch: raise plan đổi trong commit HEAD). Muốn CI tự raise thay cho bước 2b: bỏ comment khối
+# `push` dưới đây VÀ tắt bước 2b — KHÔNG bật cả hai (2 nơi cùng raise có thể đua nhau tạo trùng).
 on:
-  push:
-    branches: [main]
-    paths: ["docs/superpowers/plans/**.md"]
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths: ["docs/superpowers/plans/**.md"]
 
 permissions:
   contents: read
@@ -36,7 +38,7 @@ jobs:
           set -euo pipefail
           # --no-renames: plan đổi tên hiện là A (path mới). Phát hiện đổi tên nằm trong script (epic đang mở cùng
           # tên mà plan cũ đã biến mất) — dựa trên marker, không dựa diff của MỘT lần push.
-          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then   # chạy tay / push đầu
             changed="$(git diff-tree --root --no-commit-id --no-renames --name-only --diff-filter=AM -r HEAD -- 'docs/superpowers/plans/*.md')"
           else
             changed="$(git diff --no-renames --name-only --diff-filter=AM "$BEFORE..HEAD" -- 'docs/superpowers/plans/*.md')"

@@ -10,7 +10,8 @@
 **Mục lục:** §1 ranh giới hành động · §2 trước khi đổi hạ tầng/bảo mật · §3 ghi issue — một nguồn sự
 thật · **§4 test & NGHIỆM THU TẤT ĐỊNH (N0/N1/N2 · UI qua Playwright)** · §5 commit/push · **§6 bằng chứng trước khi tuyên
 bố (tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A) ·
-**§8 research web (học thuật + industry) — TỰ ĐỘNG trước khi chốt phương án/root-cause khó**.
+**§8 research web (học thuật + industry) — TỰ ĐỘNG trước khi chốt phương án/root-cause khó** · **§9 đặt
+tên trong code/file LUÔN tiếng Anh**.
 
 ---
 
@@ -260,3 +261,22 @@ bộ) · đã research đúng câu hỏi này trong phiên gần đây (đừng 
 - Đã đủ để chốt → mục **"Nguồn tham khảo ngoài"** trong ADR khi merge (`templates/adr-log.md`) — thêm dòng
   link + ngày tra cứu ngay cạnh phương án được chọn/loại trong bảng "Phương án đã xem xét", không tách
   thành mục riêng biệt khỏi lý do.
+
+## 9. Đặt tên trong code — LUÔN tiếng Anh (bất kể ngôn ngữ tài liệu)
+
+**Tiếng Anh, không ngoại lệ:** tên biến · hàm · class · module/package · tên **file và thư mục** · test ·
+đơn vị nghiệm thu (`acceptance/<id>-<english-slug>.sh`) · slug nhánh (`agent/<id>-<english-slug>`) · tên
+file plan (`YYYY-MM-DD-<english-feature>.md`) · khoá config/biến môi trường · tên cột/bảng DB · route API.
+
+**Theo O9 (`CLAUDE.md` §11, ngôn ngữ tài liệu), KHÔNG bị luật này ép:** văn xuôi tài liệu · comment ·
+chuỗi hiển thị cho người dùng/thông báo lỗi · mô tả commit/PR/Issue.
+
+**Thuật ngữ nghiệp vụ tiếng Việt** (không có từ tiếng Anh tương đương rõ ràng) → **đặt tên tiếng Anh MỘT
+lần ở Glossary** (cột "Tên trong code (EN)"), code dùng đúng tên đó. Không tự dịch mỗi chỗ một kiểu: đó là
+vi phạm L2, cùng khái niệm có 3 tên. Không dùng tiếng Việt bỏ dấu (`tinhTien`, `hoa_don.py`): máy không
+phân biệt được nó với tiếng Anh, người đọc không phải người Việt thì không đọc được.
+
+**Ép bằng máy** (`check.sh --naming`, nằm trong `--all` và hook `pre-push`): tên file/thư mục được track và
+tên nhánh hiện tại phải **chỉ gồm ký tự ASCII**. **Không** bắt được: tiếng Việt bỏ dấu, định danh trong code
+(mỗi ngôn ngữ một parser) ⇒ phần đó là kỷ luật + `/code-review` (G4): gặp tên không phải tiếng Anh thì là
+finding, sửa hoặc bác bỏ kèm lý do.

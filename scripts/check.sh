@@ -82,6 +82,23 @@ run_tests() {
   skip "TODO: điền lệnh test tầng A ở scripts/check.sh::run_tests (mode=$mode)"
 }
 
+# ── Đặt tên — tên file/thư mục/nhánh chỉ ASCII (AGENT.md §9: tên trong code LUÔN tiếng Anh) ──
+# Bắt được: ký tự ngoài ASCII (tiếng Việt có dấu) trong tên file/thư mục được track và tên nhánh hiện tại.
+# KHÔNG bắt được: tiếng Việt bỏ dấu, định danh bên trong code ⇒ kỷ luật + /code-review (finding).
+run_naming() {
+  echo
+  echo "Đặt tên — file/thư mục/nhánh chỉ ASCII (AGENT.md §9)"
+  local bad br
+  bad="$(git -c core.quotepath=off ls-files 2>/dev/null | LC_ALL=C grep '[^ -~]' || true)"
+  if [ -n "$bad" ]; then
+    fail "tên file/thư mục ngoài ASCII — đổi sang tiếng Anh: $(printf '%s\n' "$bad" | head -5 | tr '\n' ' ')"
+  else
+    pass "tên file/thư mục: chỉ ASCII"
+  fi
+  br="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  if LC_ALL=C grep -q '[^ -~]' <<<"$br"; then fail "tên nhánh ngoài ASCII: $br"; else pass "tên nhánh: chỉ ASCII"; fi
+}
+
 # ── Nghiệm thu TẤT ĐỊNH (AGENT.md §4) — chạy riêng bằng --acceptance ─────────
 # Mỗi đơn vị = một file acceptance/<issue-id>-<slug>.sh. Exit 0 = ĐẠT · 77 = không chạy được (thiếu dữ
 # liệu/hạ tầng) · khác = KHÔNG ĐẠT. KHÁC các bước trên: SKIP (77) tính là ĐỎ — một đơn vị nghiệm thu đã
@@ -151,14 +168,16 @@ case "$MODE" in
   --lint)    run_lint ;;
   --smoke|--test|--pytest) run_tests ;;
   --acceptance) run_acceptance ;;
+  --naming)  run_naming ;;
   --all)
+    run_naming
     run_syntax
     run_boundary
     run_lint
     run_tests
     ;;
   *)
-    echo "Dùng: $0 [--syntax|--boundary|--lint|--smoke|--all|--acceptance]" >&2
+    echo "Dùng: $0 [--naming|--syntax|--boundary|--lint|--smoke|--all|--acceptance]" >&2
     exit 2
     ;;
 esac

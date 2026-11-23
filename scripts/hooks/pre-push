@@ -10,7 +10,20 @@
 set -euo pipefail
 echo "── pre-push: cổng tĩnh + nghiệm thu tất định (bỏ qua: git push --no-verify) ──"
 repo_root="$(git rev-parse --show-toplevel)"
+"$repo_root/scripts/check.sh" --naming
 "$repo_root/scripts/check.sh" --syntax
 "$repo_root/scripts/check.sh" --boundary
 "$repo_root/scripts/check.sh" --lint
-"$repo_root/scripts/check.sh" --acceptance
+# Nghiệm thu theo ĐÚNG ref đang push (stdin: <local ref> <local sha> <remote ref> <remote sha>), không theo
+# nhánh đang đứng: `git push origin agent/43-x` khi đang ở agent/42-y phải đòi đơn vị của #43, không phải #42.
+# Giới hạn: đơn vị chạy trên working tree hiện tại (hook không checkout ref được push).
+ids=""
+while read -r local_ref _ _ _; do
+  n="$(sed -nE 's#^refs/heads/agent/([0-9]+)-.*#\1#p' <<<"$local_ref")"
+  [ -z "$n" ] || ids="$ids $n"
+done
+if [ -n "$ids" ]; then
+  ACCEPTANCE_REQUIRED_IDS="$ids" "$repo_root/scripts/check.sh" --acceptance
+else
+  PR_BODY="" "$repo_root/scripts/check.sh" --acceptance   # không push nhánh agent/* ⇒ không đòi Issue nào, chỉ chạy các đơn vị
+fi

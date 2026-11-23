@@ -395,7 +395,7 @@ không tự đổi kiểu giữa chừng — **nhất quán quan trọng hơn ph
 | O6 | **Traceability Matrix** | A: có bảng riêng (yêu cầu ↔ thiết kế ↔ test) · B: link tại chỗ | Có audit/nghiệm thu, hoặc >30 yêu cầu | Bộ nhỏ — bảng riêng sẽ lệch nhanh hơn nó giúp |
 | O7 | **Quy trình duyệt** | A: Discussion → Issue → PR → merge=Approved (xem §11b) · B: sửa thẳng, ADR khi đảo quyết định | Nhiều người, cần dấu vết thảo luận · **HOẶC nhiều AGENT chạy song song trên cùng repo (dù chỉ 1 người vận hành)** — Issue = đơn vị việc cô lập, PR = đơn vị review cô lập, tránh N agent cùng sửa một file TODO văn bản (xung đột merge liên tục, không ai biết agent nào đang làm gì) | Một người, **một agent tại một thời điểm**, tốc độ cao (áp A lúc này mới là tự trói) |
 | O8 | **Tài liệu người dùng** | A: theo **Diátaxis** (tutorial/how-to/reference/explanation) · B: một `huong-dan-su-dung.md` | Có người dùng ngoài thật sự | Còn PoC/nội bộ |
-| O9 | **Ngôn ngữ** | A: tiếng Việt · B: tiếng Anh · C: lai (thuật ngữ giữ nguyên tiếng Anh) | Người đọc là team Việt | Có cộng tác viên ngoài / định mở nguồn |
+| O9 | **Ngôn ngữ tài liệu** (văn xuôi, comment, thông báo — tên trong code/file **luôn tiếng Anh**, `AGENT.md` §9) | A: tiếng Việt · B: tiếng Anh · C: lai (thuật ngữ giữ nguyên tiếng Anh) | Người đọc là team Việt | Có cộng tác viên ngoài / định mở nguồn |
 | O10 | **Sơ đồ** | A: Mermaid trong markdown · B: drawio/Excalidraw xuất PNG | Muốn diff được, sửa được bằng agent | Sơ đồ trình bày, nhiều bố cục thủ công |
 | O11 | **File trạng thái phiên** | A: có `HANDOFF.md` · B: không, dựa vào issue tracker | Làm việc cùng agent, hay bị nén ngữ cảnh | Có tracker kỷ luật tốt và luôn cập nhật |
 

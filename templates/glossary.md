@@ -10,9 +10,9 @@
 
 ## <Nhóm khái niệm 1>
 
-| ID | Thuật ngữ | Định nghĩa | Trạng thái | Nguồn |
-|---|---|---|---|---|
-| GLOSS-<PROJ>-001 | <Term> | <Định nghĩa ngắn — 1-2 câu, không kể lại lý do (đó là việc của ADR)> | 🔒 Locked | <file/section nguồn> |
+| ID | Thuật ngữ | Tên trong code (EN) | Định nghĩa | Trạng thái | Nguồn |
+|---|---|---|---|---|---|
+| GLOSS-<PROJ>-001 | <Term> | `<english_name>` — NGUỒN DUY NHẤT của tên này trong code (`AGENT.md` §9) | <Định nghĩa ngắn — 1-2 câu, không kể lại lý do (đó là việc của ADR)> | 🔒 Locked | <file/section nguồn> |
 
 ## Nhập nhằng đã giải quyết
 

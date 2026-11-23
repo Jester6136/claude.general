@@ -22,9 +22,11 @@ phải nhớ cập nhật bằng tay.
 
 **Local-first — vì sao không dựa vào CI:** GitHub giới hạn GitHub Actions (chính sách/hạn mức), nên phán
 quyết **không được phụ thuộc** vào việc CI có chạy hay không. Phán quyết chạy ở máy, ba lớp, cùng một lệnh
-`check.sh`: (1) agent chạy trước khi mở PR, dán kết quả vào PR; (2) hook `pre-push` chạy tĩnh + nghiệm thu;
-(3) `post-merge.sh` **chạy lại nghiệm thu trên chính commit merge**, lớp này không bỏ qua được và quyết
-định có đóng Issue/epic hay không. CI (G2) chỉ bật khi hạn mức cho phép, và nếu bật cũng gọi đúng lệnh đó.
+`check.sh`: (1) agent chạy `--all` + `--acceptance` trước khi mở PR, dán kết quả vào PR; (2) hook `pre-push`
+chạy tên + tĩnh + nghiệm thu (không smoke/test); (3) `post-merge.sh` **chạy lại CHỈ `--acceptance` trên
+chính commit merge** — lớp này không bỏ qua được và quyết định có đóng Issue/epic hay không. `--all`
+(chất lượng: lint/test/smoke) KHÔNG được chạy lại sau merge: bỏ qua lớp (1) là lỗi kỷ luật mà chỉ review
+(G4) bắt được. CI (G2) chỉ bật khi hạn mức cho phép, và nếu bật cũng gọi đúng lệnh đó.
 
 **Điều kiện đảo sang O7-A:** `CLAUDE.md` §11, ngay dưới bảng O (số agent chạy đồng thời, không phải số
 người). `git branch --list 'agent/*'` liệt kê đúng ai đang làm gì tại mọi thời điểm.
@@ -313,10 +315,10 @@ thấy `HeadlessChrome/157`, viewport 1280×720.
 
 Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, dựng theo
 mục ngay trên; **bản ghim = `PINNED_VERSION` trong `scripts/plan-to-issues.py`** — nguồn duy nhất), lưu ở
-`docs/superpowers/plans/YYYY-MM-DD-<feature>.md`, đi qua PR như mọi tài liệu. **PR chứa plan merge xong** ⇒
+`docs/superpowers/plans/YYYY-MM-DD-<feature>.md` (`<feature>` tiếng Anh, `AGENT.md` §9), đi qua PR như mọi tài liệu. **PR chứa plan merge xong** ⇒
 `post-merge.sh` (bước 2b, ở máy, trên commit merge) gọi `scripts/plan-to-issues.py` — không cần CI. Workflow
-`plan-to-issues.yml` là [OPT] thay thế khi có CI; **không bật cả hai** (hai nơi cùng raise có thể đua nhau tạo
-trùng):
+`plan-to-issues.yml` là [OPT] thay thế khi có CI: mặc định chỉ chạy tay; bật trigger `push` thì đặt
+`PLANS_VIA_CI=1` khi chạy `post-merge.sh` — **không để hai nơi cùng raise** (đua nhau tạo trùng):
 
 | Plan | Thành | Nội dung |
 |---|---|---|
@@ -350,7 +352,9 @@ list`, `git branch --list 'agent/*'`) bắt đầu nói dối. Đóng vòng bằ
 nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước, từ worktree chính). Cổng vào: PR **MERGED** +
 **nghiệm thu chạy LẠI ở máy trên chính commit merge** (worktree tạm, `PR_BODY` = mô tả PR) **XANH**. Không
 cần CI; nếu PR có check CI [OPT] thì không còn check đang chạy và lần mới nhất của mọi (workflow, job) phải
-SUCCESS. Nghiệm thu trên commit merge ĐỎ ⇒ dừng, không đóng gì, báo người (thông báo 4).
+SUCCESS. Nghiệm thu trên commit merge ĐỎ ⇒ dừng, không đóng gì, báo người (thông báo 4). PR sửa chính cổng
+(`scripts/check.sh`, `post-merge.sh`, hook) ⇒ phán quyết do cổng đã sửa tự chấm mình ⇒ người đọc diff cổng
+rồi chạy với `GATE_CHANGE_REVIEWED=1`. Danh sách file PR lấy qua REST phân trang (không cắt ở 100 file).
 
 | Thứ | Đóng khi | Ai/cái gì đóng |
 |---|---|---|
@@ -386,7 +390,8 @@ Nối hai chiều: Issue trỏ mục doc liên quan; doc ghi bài học kèm s�
 
 ### [OPT] Quy ước tên nhánh cho agent — `agent/<issue-id>-<slug>`
 
-Ví dụ: `agent/42-fix-quota-closure-bug`. Tiền tố `agent/` (hoặc `ai/`, miễn nhất quán) làm hai việc:
+Ví dụ: `agent/42-fix-quota-closure-bug` — slug **tiếng Anh** (`AGENT.md` §9, `check.sh --naming` chặn tên
+nhánh ngoài ASCII). Tiền tố `agent/` (hoặc `ai/`, miễn nhất quán) làm hai việc:
 báo cho reviewer **trước khi mở diff** đây là code máy viết, và cho phép áp **branch-protection riêng**
 cho nhánh agent (vd cấm push thẳng/force-push, bắt buộc PR) khác với nhánh người. Lợi ích đo được:
 `git branch --list 'agent/*'` liệt kê đúng và chỉ đúng mọi nhánh agent đang mở.
@@ -399,7 +404,7 @@ nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy tr
 
 | Cổng | Nội dung | Tất định? | Chi phí | Đáng làm khi |
 |---|---|---|---|---|
-| G1 **`check.sh --all` + `--acceptance` Ở MÁY** | lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4). Chạy: agent trước PR · hook `pre-push` · `post-merge.sh` chạy lại trên commit merge | ✅ — **đây là phán quyết** | thấp | luôn luôn |
+| G1 **`check.sh --all` + `--acceptance` Ở MÁY** | tên (ASCII) · lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4). Chạy đủ: agent trước PR. Hook `pre-push`: tên + tĩnh + nghiệm thu. `post-merge.sh`: CHỈ nghiệm thu, trên commit merge | ✅ — **đây là phán quyết** | thấp | luôn luôn |
 | G2 **[OPT] CI chạy G1** | mỗi push/PR — lưới thứ hai, KHÔNG thay G1 | ✅ | tốn hạn mức Actions | **[TRIGGER]** chính sách/hạn mức GitHub Actions cho phép, hoặc có runner tự dựng |
 | G3 **Nhánh được bảo vệ** | cấm push thẳng, bắt buộc PR; "required status checks" CHỈ khi có G2 | ✅ | thấp | sau khi G1 chạy được ở máy |
 | G4 **skill `code-review`** (+ Playwright MCP cho UI) | **BẮT BUỘC chạy trước MỌI merge** (chốt 2026-09-13), ai bấm merge cũng vậy. Vai trò: **sinh finding**, KHÔNG phán quyết. Mỗi finding → test tất định (vào G1) hoặc bác bỏ kèm lý do trong PR | ❌ — nên không được chặn trực tiếp | thấp | luôn luôn |
@@ -539,6 +544,12 @@ xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng m
   lần chạy gần nhất (`gh run list -L 5`), `check.sh --all` cho `pass=0 fail=0 skip=4` — xanh mà không
   kiểm gì. Vì vậy ở `--acceptance`: đơn vị đã khai mà không chạy được (exit 77) là ĐỎ, PR đóng Issue mà
   thiếu đơn vị là ĐỎ; chỉ "repo chưa có đơn vị nào" là SKIP-kèm-cảnh-báo (`AGENT.md` §4.2).
+- **(5) Cổng chết mà báo thành công.** bash 3.2 (mặc định macOS): script có `trap … EXIT` mà gặp lỗi `set -u`
+  (biến chưa khai báo) thì thoát mã **0**, và `$?` trong trap cũng là 0 nên không cứu được. Đo 2026-11-23,
+  `bash -c 'set -u; trap f EXIT; echo "$x"'` → rc=0. Lỗi thật: `"$var—"` (dấu `—` dính vào tên biến) làm
+  `post-merge.sh` chết giữa chừng nhưng báo exit 0. Xử lý: không dùng `trap EXIT` trong cổng (chỉ INT/TERM),
+  viết `${var}` khi ngay sau là ký tự không phải ASCII, và kiểm ngược bằng cách cố tình chèn một biến chưa
+  khai báo.
 
 ### [OPT] Khi bật CI / khi KHÔNG đủ quyền — kiểm trước khi tin
 
