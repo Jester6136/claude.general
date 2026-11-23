@@ -12,6 +12,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    # edited: thêm `Closes #N` vào mô tả PR sau khi CI đã xanh vẫn phải chạy lại kiểm đơn vị nghiệm thu.
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   check:
@@ -31,24 +33,21 @@ jobs:
       #     cache: pip
 
       - name: Cài dependency
+        id: deps
         run: |
           echo 'TODO: pip install -r requirements.txt (hoặc npm ci, v.v.)'
 
       - name: check.sh --all (static + smoke thuần + test plumbing)
         run: ./scripts/check.sh --all
 
-      # Phán quyết nghiệm thu TẤT ĐỊNH (AGENT.md §4): N0 · N1 replay · chấm lại snapshot N2. Skip = ĐỎ,
-      # flaky = ĐỎ. Không bao giờ gọi model sống ở đây — sinh snapshot/record cassette là tầng B.
-      # !cancelled(): vẫn chạy khi --all đỏ — phán quyết nghiệm thu luôn phải hiện, không bị che bởi lint.
-      # Issue mà PR đóng (Closes/Fixes/Resolves #N) ⇒ bắt buộc có acceptance/<N>-*.sh. Body PR đi qua env,
-      # KHÔNG nội suy ${{ }} thẳng vào script (tránh injection từ nội dung PR).
+      # Phán quyết nghiệm thu TẤT ĐỊNH (AGENT.md §4.2): N0 · N1 replay · chấm lại snapshot N2. Đơn vị exit 77
+      # (không chạy được) = ĐỎ, flaky = ĐỎ, Issue được đóng mà thiếu đơn vị = ĐỎ. Không bao giờ gọi model
+      # sống ở đây — sinh snapshot/record cassette là tầng B. Vẫn chạy khi --all đỏ (phán quyết luôn phải
+      # hiện), nhưng KHÔNG chạy khi cài dependency hỏng (tránh đỏ dây chuyền che mất gốc rễ).
+      # Việc tách số Issue từ PR_BODY nằm trong check.sh, không trong YAML. Body đi qua env, KHÔNG nội suy
+      # ${{ }} thẳng vào script (tránh injection từ nội dung PR).
       - name: check.sh --acceptance (nghiệm thu tất định)
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
         env:
           PR_BODY: ${{ github.event.pull_request.body }}
-        run: |
-          ACCEPTANCE_REQUIRED_IDS="$(printf '%s' "${PR_BODY:-}" \
-            | grep -oiE '(close[sd]?|fix(e[sd])?|resolve[sd]?) +#[0-9]+' | grep -oE '[0-9]+' | sort -u | tr '\n' ' ' || true)"
-          export ACCEPTANCE_REQUIRED_IDS
-          echo "Issue cần đơn vị nghiệm thu: ${ACCEPTANCE_REQUIRED_IDS:-(không có)}"
-          ./scripts/check.sh --acceptance
+        run: ./scripts/check.sh --acceptance

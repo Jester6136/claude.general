@@ -87,15 +87,31 @@ run_tests() {
 # khai mà không chạy được thì chưa nghiệm thu. Mỗi đơn vị chạy 2 lần; exit code lệch = FLAKY = ĐỎ (không
 # tất định thì không được làm phán quyết; 2 lần chỉ bắt lệch THÔ, không chứng minh tất định).
 # Không có đơn vị nào = SKIP (hiện cảnh báo, không đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
-# ACCEPTANCE_REQUIRED_IDS="42 43" (CI lấy từ `Closes #N` của PR) ⇒ thiếu acceptance/<N>-*.sh = ĐỎ: việc
-# đóng Issue mà không khai đơn vị nghiệm thu thì không được xanh (ép bằng máy, CLAUDE.md L7).
+# Issue BẮT BUỘC có đơn vị (thiếu acceptance/<N>-*.sh = ĐỎ — ép bằng máy, CLAUDE.md L7), lấy từ:
+#   (a) ACCEPTANCE_REQUIRED_IDS="42 43" nếu được set — ghi đè hoàn toàn (a)+(b)+(c);
+#   (b) PR_BODY (CI truyền vào): từ khoá đóng của GitHub `Closes/Fixes/Resolves[:] #N`;
+#   (c) tên nhánh `agent/<N>-<slug>` (GITHUB_HEAD_REF ở CI, nhánh hiện tại ở máy dev) — để máy dev và CI
+#       cho CÙNG phán quyết.
+# KHÔNG bắt được: đóng Issue qua URL đầy đủ, qua sidebar "Development", qua từ khoá trong commit message.
 # N2: đơn vị chỉ CHẤM LẠI snapshot đã đóng băng — KHÔNG gọi model sống ở đây (đó là tầng B).
+acceptance_ids() {
+  if [ -n "${ACCEPTANCE_REQUIRED_IDS+x}" ]; then echo "$ACCEPTANCE_REQUIRED_IDS"; return 0; fi
+  local branch="${GITHUB_HEAD_REF:-$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)}"
+  {
+    printf '%s\n' "${PR_BODY:-}" \
+      | grep -oiE '(^|[^[:alnum:]_])(close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' \
+      | grep -oE '#[0-9]+' | tr -d '#' || true
+    printf '%s\n' "$branch" | sed -nE 's#^agent/([0-9]+)-.*#\1#p' || true
+  } | sort -u | tr '\n' ' ' || true
+}
 verdict_of() { case "$1" in 0) echo ĐẠT ;; 77) echo KHÔNG-CHẠY ;; *) echo KHÔNG-ĐẠT ;; esac; }
 run_acceptance() {
   echo
   echo "Nghiệm thu tất định (acceptance/*.sh, mỗi đơn vị chạy 2 lần)"
   local dir="${ACCEPTANCE_DIR:-acceptance}" unit rc1 rc2 v1 v2 id n=0
-  for id in ${ACCEPTANCE_REQUIRED_IDS:-}; do
+  local ids; ids="$(acceptance_ids)"
+  [ -n "${ids// /}" ] && echo "  · Issue bắt buộc có đơn vị nghiệm thu: $ids"
+  for id in $ids; do
     if compgen -G "$dir/$id-*.sh" >/dev/null; then
       pass "Issue #$id có đơn vị nghiệm thu"
     else

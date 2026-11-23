@@ -424,8 +424,9 @@ xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng m
 - **(3)** `./check.sh | tail -2 && git commit` — exit code của pipeline là của `tail` ⇒ commit chạy dù
   cổng ĐỎ. Đừng bọc cổng trong pipeline, hoặc bật `set -o pipefail`.
 - **(4) Xanh vì skip toàn bộ.** Đo ngày 2026-11-23 trên chính repo playbook này: CI báo `success` 5/5
-  lần chạy gần nhất (`gh run list -L 5`), `check.sh --all` cho `pass=0 fail=0 skip=4` — xanh mà không kiểm gì. Vì vậy `--acceptance`
-  coi skip là ĐỎ (`AGENT.md` §4.2).
+  lần chạy gần nhất (`gh run list -L 5`), `check.sh --all` cho `pass=0 fail=0 skip=4` — xanh mà không
+  kiểm gì. Vì vậy ở `--acceptance`: đơn vị đã khai mà không chạy được (exit 77) là ĐỎ, PR đóng Issue mà
+  thiếu đơn vị là ĐỎ; chỉ "repo chưa có đơn vị nào" là SKIP-kèm-cảnh-báo (`AGENT.md` §4.2).
 
 ### Khi KHÔNG có runner / KHÔNG đủ quyền — vẫn lấy được phần lớn giá trị
 

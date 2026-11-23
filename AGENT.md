@@ -106,8 +106,10 @@ chạy mỗi đơn vị 2 lần và đỏ nếu PHÁN QUYẾT lệch (§4.2) —
 Mỗi đơn vị nghiệm thu là một file chạy được `acceptance/<issue-id>-<slug>.sh` (exit 0 = ĐẠT; exit 77 =
 không chạy được, **tính là ĐỎ**; khác = KHÔNG ĐẠT). `./scripts/check.sh --acceptance` chạy tất cả, mỗi cái
 2 lần. Thư mục chưa có đơn vị nào = SKIP (cảnh báo, chưa đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
-**Ép bằng máy:** CI đọc `Closes/Fixes/Resolves #N` trong PR → `ACCEPTANCE_REQUIRED_IDS` → thiếu
-`acceptance/<N>-*.sh` = ĐỎ. Ở O7-B (không có PR), luật này chỉ là kỷ luật — tự kiểm ở §6.
+**Ép bằng máy:** `check.sh` lấy số Issue từ `Closes/Fixes/Resolves[:] #N` trong PR (CI truyền `PR_BODY`)
+và từ tên nhánh `agent/<N>-*` (máy dev lẫn CI) → thiếu `acceptance/<N>-*.sh` = ĐỎ. **Không** bắt được: đóng
+qua URL đầy đủ, qua sidebar "Development", qua từ khoá trong commit message — dùng `Closes #N` trong mô tả
+PR. Ở O7-B (không PR, không nhánh `agent/*`), luật này chỉ là kỷ luật — tự kiểm ở §6.
 
 ### 4.3 Tầng chạy: A (CI) vs B (hạ tầng sống)
 
@@ -189,7 +191,9 @@ chỉ là checklist thao tác:
    mãi. Lượt delta sạch hoặc mọi finding của nó đã xử lý ⇒ xong.
 7. Merge — người bấm, hoặc agent **CHỈ khi** được trao quyền (`constitution.md`).
 8. Sau merge, cùng lượt: đóng Issue (nếu `Closes` không tự đóng, vd liên-repo) · `git worktree remove
-   .worktrees/<slug>` + xoá nhánh `agent/*` (để `git branch --list 'agent/*'` vẫn đúng là "đang làm") ·
+   .worktrees/<slug>` + xoá nhánh `agent/*` — squash/rebase merge thì `git branch -d` từ chối, dùng
+   `git branch -D` SAU KHI xác nhận PR đã merged (`gh pr view <N> --json state`), nhánh remote xoá bằng
+   `gh pr merge --delete-branch` (để `git branch --list 'agent/*'` vẫn đúng là "đang làm") ·
    cập nhật `HANDOFF.md`.
 
 Nếu chưa chọn O7-A (đang dùng O7-B — sửa thẳng, ADR khi đảo quyết định): bỏ qua §7, dùng §3 (roadmap
