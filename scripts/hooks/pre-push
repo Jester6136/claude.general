@@ -2,12 +2,15 @@
 # pre-push — kỷ luật, KHÔNG phải cưỡng chế. Bỏ qua được bằng `git push --no-verify`.
 # Cài: chạy scripts/install-hooks.sh (git KHÔNG version .git/hooks — mỗi người clone phải tự cài).
 #
-# Cố ý CHỈ chạy tầng TĨNH (syntax+boundary+lint), không chạy test đầy đủ: push chậm ⇒ người ta
-# --no-verify cho xong, cổng mất tác dụng (GIT-FLOW.md §11b). CI (nếu có runner) là lưới thứ hai, chạy
-# đầy đủ hơn — đây KHÔNG thay thế CI.
+# LOCAL-FIRST (GitHub giới hạn Actions — CI là [OPT]): hook này là lưới máy CHÍNH trước khi code rời máy.
+# Chạy tầng TĨNH (syntax+boundary+lint) + NGHIỆM THU TẤT ĐỊNH (acceptance/*.sh — tầng A, không hạ tầng
+# sống, phải nhanh). KHÔNG chạy smoke/test đầy đủ: push chậm ⇒ người ta --no-verify cho xong, cổng mất tác
+# dụng (GIT-FLOW.md §11b). Đơn vị nghiệm thu chậm tới mức làm push ì = dấu hiệu nó chạm tầng B, tách ra.
+# Bỏ qua được ⇒ post-merge.sh CHẠY LẠI nghiệm thu trên commit merge (lưới thứ hai, không bỏ qua được).
 set -euo pipefail
-echo "── pre-push: chạy cổng tĩnh (bỏ qua: git push --no-verify) ──"
+echo "── pre-push: cổng tĩnh + nghiệm thu tất định (bỏ qua: git push --no-verify) ──"
 repo_root="$(git rev-parse --show-toplevel)"
 "$repo_root/scripts/check.sh" --syntax
 "$repo_root/scripts/check.sh" --boundary
 "$repo_root/scripts/check.sh" --lint
+"$repo_root/scripts/check.sh" --acceptance

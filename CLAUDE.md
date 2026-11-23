@@ -20,7 +20,7 @@ việc (chi tiết ở **`GIT-FLOW.md`** cạnh file này — chỉ đọc khi �
 **`MULTI-REPO.md`** (bất kể O7-A/B) · §12 ba thứ không nên làm.
 
 > **Bắt đầu project mới?** Đừng chỉ chép file này — có sẵn bộ khung copy-paste đầy đủ (AGENT.md ·
-> `templates/` · `.github/` issue-forms + PR template + workflow CI) trong repo chứa file này
+> `templates/` · `.github/` issue-forms + PR template + workflow CI [OPT]) trong repo chứa file này
 > ([claude.general](https://github.com/Jester6136/claude.general)). Xem `README.md` ở gốc repo đó để
 > bootstrap trong 1 ngày theo §10.
 

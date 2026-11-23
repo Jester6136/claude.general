@@ -15,11 +15,11 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 | `templates/` | Copy-paste thẳng vào `docs/` project mới: `glossary.md` · `adr-log.md` · `context-map.md` · `README.md` (doc index) · `roadmap.md` · `HANDOFF.md` · `constitution.md` ([OPT]). |
 | `.github/ISSUE_TEMPLATE/` | `agent-ready.yml` (SPEC/PLAN) · `decision-needed.yml` — chỉ cần nếu dùng O7-A. |
 | `.github/PULL_REQUEST_TEMPLATE.md` | Checklist bằng chứng trước khi mở PR. |
-| `.github/workflows/check.yml` | CI gọi `scripts/check.sh --all` — điền TODO theo ngôn ngữ project. |
+| `.github/workflows/check.yml` | **[OPT]** CI gọi `scripts/check.sh --all` + `--acceptance`. Local-first: GitHub giới hạn Actions ⇒ phán quyết chạy ở máy (hook + `post-merge.sh`), chỉ bật workflow này khi hạn mức cho phép. |
 | `scripts/check.sh` | Cổng chất lượng — khung 4 bước (syntax/boundary/lint/test), điền TODO · `--acceptance` chạy mọi đơn vị nghiệm thu tất định `acceptance/*.sh` (skip/flaky = ĐỎ, `AGENT.md` §4). Máy dev VÀ CI gọi CÙNG script này. |
-| `scripts/plan-to-issues.py` + `.github/workflows/plan-to-issues.yml` | Plan (superpowers `writing-plans`, bản ghim = `PINNED_VERSION` trong script, `--check-pin` để kiểm máy) merge vào `main` → 1 epic + N story `agent-ready`, mỗi story mang sẵn đơn vị nghiệm thu từ các cặp `Run:`/`Expected:`. Plan sai định dạng → từ chối, không tạo gì. |
-| `scripts/post-merge.sh` | Đóng vòng sau merge: chỉ chạy khi PR MERGED + mọi check SUCCESS → đóng Issue/epic, dọn worktree + nhánh local/remote. Có `--dry-run`. |
-| `scripts/install-hooks.sh` + `scripts/hooks/pre-push` | Cổng kỷ luật ở máy dev (git không version `.git/hooks`, phải tự cài). |
+| `scripts/plan-to-issues.py` (+ `.github/workflows/plan-to-issues.yml` [OPT]) | Plan (superpowers `writing-plans`, bản ghim = `PINNED_VERSION` trong script, `--check-pin` để kiểm máy) merge vào `main` — `post-merge.sh` gọi ở máy, workflow chỉ là phương án thay khi có CI → 1 epic + N story `agent-ready`, mỗi story mang sẵn đơn vị nghiệm thu từ các cặp `Run:`/`Expected:`. Plan sai định dạng → từ chối, không tạo gì. |
+| `scripts/post-merge.sh` | Đóng vòng sau merge: PR MERGED + **chạy lại nghiệm thu ở máy trên commit merge** XANH (không cần CI) → đóng Issue/epic, raise plan → epic/story, dọn worktree + nhánh local/remote. Có `--dry-run`. |
+| `scripts/install-hooks.sh` + `scripts/hooks/pre-push` | Cổng ở máy dev: tĩnh + **nghiệm thu** trước khi push — lưới máy CHÍNH khi không dùng CI (git không version `.git/hooks`, phải tự cài). |
 
 ## Bootstrap một project mới — 1 ngày (Sprint 0, `CLAUDE.md` §10)
 

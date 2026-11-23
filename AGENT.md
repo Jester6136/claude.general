@@ -57,7 +57,7 @@ Chọn MỘT trong hai theo O7 — điều kiện chọn (số AGENT chạy đ�
 
 Đổi TODO/Issue **CÙNG COMMIT** với code fix — doc lệch code = nợ kỹ thuật, coi như việc chưa xong.
 
-## 4. Test & NGHIỆM THU TẤT ĐỊNH — CI tự kiểm được vs cần GPU/hạ tầng sống
+## 4. Test & NGHIỆM THU TẤT ĐỊNH — chạy ở MÁY (local-first) · tầng A vs cần GPU/hạ tầng sống
 
 ### 4.1 Nguyên tắc gốc: tất định nằm ở BỘ CHẤM + DỮ LIỆU ĐÓNG BĂNG, không nằm ở thứ được chấm
 
@@ -108,20 +108,22 @@ chạy mỗi đơn vị 2 lần và đỏ nếu PHÁN QUYẾT lệch (§4.2) —
 Mỗi đơn vị nghiệm thu là một file chạy được `acceptance/<issue-id>-<slug>.sh` (exit 0 = ĐẠT; exit 77 =
 không chạy được, **tính là ĐỎ**; khác = KHÔNG ĐẠT). `./scripts/check.sh --acceptance` chạy tất cả, mỗi cái
 2 lần. Thư mục chưa có đơn vị nào = SKIP (cảnh báo, chưa đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
-**Ép bằng máy:** `check.sh` lấy số Issue từ `Closes/Fixes/Resolves[:] #N` trong PR (CI truyền `PR_BODY`)
-và từ tên nhánh `agent/<N>-*` (máy dev lẫn CI) → thiếu `acceptance/<N>-*.sh` = ĐỎ. **Không** bắt được: đóng
+**Ép bằng máy:** `check.sh` lấy số Issue từ `Closes/Fixes/Resolves[:] #N` trong mô tả PR (`PR_BODY` —
+`post-merge.sh` tự truyền khi chạy lại trên commit merge) hoặc, khi không có `PR_BODY`, từ tên nhánh
+`agent/<N>-*` → thiếu `acceptance/<N>-*.sh` = ĐỎ. **Local-first:** GitHub giới hạn Actions nên phán quyết
+KHÔNG dựa vào CI — chạy ở máy (trước PR · hook `pre-push` · `post-merge.sh` trên commit merge); CI là [OPT]. **Không** bắt được: đóng
 qua URL đầy đủ, qua sidebar "Development", qua từ khoá trong commit message — dùng `Closes #N` trong mô tả
 PR. Ở O7-B (không PR, không nhánh `agent/*`), luật này chỉ là kỷ luật — tự kiểm ở §6.
 
-### 4.3 Tầng chạy: A (CI) vs B (hạ tầng sống)
+### 4.3 Tầng chạy: A (máy trống) vs B (hạ tầng sống)
 
 Bất kỳ project nào có ≥1 test đụng model/DB-sống/GPU sẽ cần ranh giới này sớm hay muộn — đặt tên tường
-minh ngay từ Sprint 0 rẻ hơn nhiều so với để CI tự khám phá qua timeout.
+minh ngay từ Sprint 0 rẻ hơn nhiều so với để hook/CI tự khám phá qua timeout.
 
 | Tầng | Gồm gì | Chạy ở đâu | Cơ chế phân biệt (MÁY, không phải quy ước bằng lời) |
 |---|---|---|---|
-| **A — CI tự kiểm được** | static (cú pháp/boundary/lint nhóm bắt lỗi thật) · smoke THUẦN · test plumbing/logic thuần · **N0 · N1 (replay) · chấm lại snapshot N2** | `./scripts/check.sh --all` + `--acceptance` — chạy được trên runner hosted: không GPU, không service sống | Marker/naming quy ước rõ ràng — vd docstring `PURE smoke`, `test_*`, `acceptance/*.sh` |
-| **B — cần GPU/hạ tầng sống** | **sinh** snapshot N2 · **record** cassette N1 · e2e với DB/service thật | **CHỈ** máy dev/máy hạ tầng thật — **KHÔNG BAO GIỜ** trong CI hosted. Sản phẩm của tầng B (snapshot/cassette) được commit/lưu để tầng A chấm lại | KHÔNG mang marker tầng A; đặt tên khác hẳn (`eval_*`, `record_*`, `*_e2e`) |
+| **A — chạy được trên máy trống** | static (cú pháp/boundary/lint nhóm bắt lỗi thật) · smoke THUẦN · test plumbing/logic thuần · **N0 · N1 (replay) · chấm lại snapshot N2** | `./scripts/check.sh --all` + `--acceptance` ở máy agent/dev, hook `pre-push`, `post-merge.sh` (worktree tạm), và CI [OPT] — không GPU, không service sống | Marker/naming quy ước rõ ràng — vd docstring `PURE smoke`, `test_*`, `acceptance/*.sh` |
+| **B — cần GPU/hạ tầng sống** | **sinh** snapshot N2 · **record** cassette N1 · e2e với DB/service thật | **CHỈ** máy dev/máy hạ tầng thật, chạy CÓ CHỦ ĐÍCH — **KHÔNG BAO GIỜ** trong `--acceptance`/hook/CI. Sản phẩm của tầng B (snapshot/cassette) được commit/lưu để tầng A chấm lại | KHÔNG mang marker tầng A; đặt tên khác hẳn (`eval_*`, `record_*`, `*_e2e`) |
 
 Liệt kê CỤ THỂ tầng B theo module ngay khi phát hiện (đừng để "ngầm hiểu") — bảng trống dưới đây điền
 dần:
@@ -130,14 +132,14 @@ dần:
 |---|---|
 | `<điền khi phát hiện>` | `<LLM thật / DB sống / GPU>` |
 
-★ Workflow CI **CHỈ được phép** gọi `./scripts/check.sh` (`--all` và `--acceptance` = tầng A nguyên
-vẹn). Không job nào gọi trực tiếp file tầng B. Thêm module tầng A mới thì tự động được gom vào (marker/naming, không sửa
-workflow); thêm module tầng B thì **đừng gắn marker tầng A** — gắn nhầm là cách nhanh nhất khiến CI đỏ
+★ Hook, `post-merge.sh` và workflow CI [OPT] **CHỈ được phép** gọi `./scripts/check.sh` (`--all` và
+`--acceptance` = tầng A nguyên vẹn). Không nơi nào gọi trực tiếp file tầng B. Thêm module tầng A mới thì tự động được gom vào (marker/naming, không sửa
+workflow); thêm module tầng B thì **đừng gắn marker tầng A** — gắn nhầm là cách nhanh nhất khiến cổng đỏ
 oan vì thiếu hạ tầng, tưởng nhầm là lỗi code.
 
 ★ **Bài học đáng nhớ (nguồn: dự án quan sát được):** test không ai chạy tự động sẽ **thối lặng lẽ** —
 code đổi có chủ đích, test không cập nhật theo, rồi im lặng đỏ hàng tháng không ai biết vì không ai
-chạy nó. Không phải "test tệ", mà là "test không nằm trong vòng lặp nào cả". Gắn vào `check.sh`/CI ngay
+chạy nó. Không phải "test tệ", mà là "test không nằm trong vòng lặp nào cả". Gắn vào `check.sh` (và hook `pre-push`) ngay
 khi viết test đầu tiên, đừng để dồn.
 
 ### 4.4 Giao diện — Playwright MCP để NHÌN, Playwright test để PHÁN QUYẾT
@@ -193,8 +195,11 @@ nhau ở **`MULTI-REPO.md`** — đây chỉ là checklist thao tác:
 2. **Viết đơn vị nghiệm thu TRƯỚC** (`acceptance/<issue-id>-<slug>.sh`, cấp N0/N1/N2 theo SPEC, §4.1) →
    chạy trên nhánh nền → phải ĐỎ.
 3. Implement trong ranh giới SPEC. **Gặp chỗ MƠ HỒ → DỪNG, hỏi ở Issue, KHÔNG tự suy diễn.**
-4. `./scripts/check.sh --all && ./scripts/check.sh --acceptance` — ĐỎ thì tự sửa, đừng mở PR.
-5. Chạy §6 → mở PR (`Closes #NN`, điền "Phán quyết nghiệm thu").
+4. `./scripts/check.sh --all && ./scripts/check.sh --acceptance` — ĐỎ thì tự sửa, đừng mở PR. (Hook
+   `pre-push` chạy lại tĩnh + nghiệm thu; cài bằng `scripts/install-hooks.sh`.)
+5. Chạy §6 → mở PR (`Closes #NN`) → chạy lại theo đúng mô tả PR:
+   `PR_BODY="$(gh pr view <PR> --json body -q .body)" ./scripts/check.sh --acceptance` → dán vào "Phán quyết
+   nghiệm thu". Không cần CI (GitHub giới hạn Actions — local-first, §4.2).
 6. `/code-review` trên diff — BẮT BUỘC trước MỌI merge, ai bấm cũng vậy (chốt 2026-09-13). Mỗi finding
    → **sửa/thành test tất định** (quay lại bước 4) hoặc **bác bỏ kèm lý do** trong PR. Không finding nào
    để trống. **Điểm dừng:** lần review sau chỉ chạy trên **phần diff thêm vào kể từ lần trước** (các commit
@@ -202,9 +207,10 @@ nhau ở **`MULTI-REPO.md`** — đây chỉ là checklist thao tác:
    mãi. Lượt delta sạch hoặc mọi finding của nó đã xử lý ⇒ xong.
 7. Merge — người bấm, hoặc agent **CHỈ khi** được trao quyền (`constitution.md`).
 8. **Đóng vòng — BẮT BUỘC ngay sau merge:** `./scripts/post-merge.sh <PR> --dry-run` → đọc → chạy thật
-   `./scripts/post-merge.sh <PR>`. Script chỉ làm khi PR **MERGED và mọi check SUCCESS** (gồm nghiệm thu),
-   rồi theo thứ tự: đóng Issue mà PR đóng (nếu GitHub chưa tự đóng) → đóng **epic** khi mọi Issue con đã
-   đóng và nghiệm thu riêng của epic XANH → `git worktree remove` (không `--force`) → `git branch -D` →
+   `./scripts/post-merge.sh <PR>`. Script chỉ làm khi PR **MERGED** và **nghiệm thu chạy LẠI trên chính
+   commit merge XANH** (worktree tạm; CI [OPT] nếu có thì cũng phải SUCCESS), rồi theo thứ tự: đóng Issue
+   mà PR đóng (nếu GitHub chưa tự đóng) → đóng **epic** khi mọi Issue con đã đóng và nghiệm thu riêng của
+   epic XANH → raise epic/story cho plan mà PR thêm/sửa → `git worktree remove` (không `--force`) → `git branch -D` →
    xoá nhánh remote → `fetch --prune`. Chi tiết: `GIT-FLOW.md` § "Sau merge — đóng vòng". Cuối cùng
    cập nhật `HANDOFF.md`. Không đóng vòng ⇒ `git branch --list 'agent/*'` thôi còn đúng là "đang làm".
 

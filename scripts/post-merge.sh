@@ -1,23 +1,30 @@
 #!/usr/bin/env bash
 # scripts/post-merge.sh <PR-number> [--dry-run] — ĐÓNG VÒNG sau khi một PR đạt nghiệm thu và đã merge
-# (AGENT.md §7 bước 8, GIT-FLOW.md § "Sau merge — đóng vòng"). Chạy ở MÁY DEV/agent, không phải CI:
-# worktree và nhánh local chỉ tồn tại ở đó.
+# (AGENT.md §7 bước 8, GIT-FLOW.md § "Sau merge — đóng vòng"). Chạy ở MÁY DEV/agent: worktree và nhánh
+# local chỉ tồn tại ở đó. LOCAL-FIRST: KHÔNG cần CI (GitHub giới hạn Actions) — phán quyết là chạy lại
+# nghiệm thu ở máy trên CHÍNH commit merge.
 #
-#   0. KIỂM TRƯỚC, CHƯA LÀM GÌ: PR MERGED · không còn check chưa xong · check MỚI NHẤT của từng (workflow,
-#      job) đều SUCCESS (run CANCELLED do chạy lại không tính) · 0 check = không đạt · điều kiện dọn nhánh/worktree (bẩn/đang đứng trong nó
-#      thì DỪNG NGAY, trước khi đóng bất cứ Issue nào).
+#   0. KIỂM TRƯỚC, CHƯA LÀM GÌ:
+#      · PR MERGED.
+#      · PHÁN QUYẾT (bắt buộc): `check.sh --acceptance` chạy lại trong worktree TẠM detached ở commit merge,
+#        PR_BODY = mô tả PR (Issue nào bị đóng thì phải có đơn vị). ĐỎ ⇒ nhánh nền đang hỏng: dừng, báo người.
+#      · CI [OPT]: nếu PR CÓ check thì không còn check chưa xong và lần MỚI NHẤT của từng (workflow, job)
+#        đều SUCCESS (CANCELLED do chạy lại không tính). 0 check = project không bật CI — hợp lệ.
+#      · Điều kiện dọn nhánh/worktree (bẩn/đang đứng trong nó ⇒ DỪNG NGAY, trước khi đóng bất cứ gì).
 #   1. Issue mà PR đóng (`closingIssuesReferences`, giữ đúng repo của từng Issue): Issue CÙNG repo phải
 #      có acceptance/<N>-*.sh trên origin/<base> — thiếu ⇒ MỞ LẠI kèm comment (đóng mà không nghiệm thu là
-#      lỗ, kể cả khi đóng qua commit message/sidebar mà CI không thấy). Còn mở ⇒ đóng.
+#      lỗ, kể cả khi đóng qua commit message/sidebar). Còn mở ⇒ đóng.
 #   2. EPIC (nhãn `epic`): con = sub-issue (phân trang đủ) ∪ dòng task-list `- [ ] [owner/repo]#N` trong body
-#      epic — CHỈ link tường minh, định danh đủ owner/repo#N (con có thể ở repo khác). Issue khai ô "Epic" mà chưa được link ⇒ cảnh báo, KHÔNG đóng epic (không biết đủ tập
-#      con). Đóng khi mọi con đã đóng VÀ acceptance/epic/<E>/*.sh XANH qua
-#      `check.sh --acceptance` (2 lần, flaky = đỏ) trên HEAD == origin/<base>.
+#      epic — CHỈ link tường minh, định danh đủ owner/repo#N. Issue khai ô "Epic" mà chưa được link ⇒ cảnh
+#      báo, KHÔNG đóng epic. Đóng khi mọi con đã đóng VÀ acceptance/epic/<E>/*.sh XANH (worktree tạm ở
+#      origin/<base>, 2 lần, flaky = đỏ).
+#   2b. PLAN: plan `docs/superpowers/plans/*.md` mà PR thêm/sửa ⇒ `plan-to-issues.py` (worktree tạm ở commit
+#      merge) raise epic/story — thay cho workflow CI. Chạy lại an toàn (marker).
 #   3. Dọn — CHỈ nhánh `agent/*` của chính repo này (không fork, không develop/release): worktree remove
 #      (không --force) → branch -D → xoá nhánh remote.
 #
-# --dry-run: không đóng/mở/xoá gì, KHÔNG chạy đơn vị nghiệm thu. Vẫn `git fetch` (chỉ cập nhật ref remote,
-# không đổi working tree) vì phán quyết cần đọc origin/<base> mới nhất.
+# --dry-run: không đóng/mở/xoá/tạo gì trên GitHub hay nhánh. VẪN chạy nghiệm thu (worktree tạm, xoá ngay
+# sau đó) để xem trước đúng phán quyết, và `plan-to-issues.py --dry-run`. Vẫn `git fetch`.
 set -euo pipefail
 
 PR="${1:-}"; DRY=0; [ "${2:-}" = "--dry-run" ] && DRY=1
@@ -27,29 +34,54 @@ die() { echo "✗ $*" >&2; exit 1; }
 run() { if [ "$DRY" -eq 1 ]; then echo "  [dry-run] $*"; else echo "  \$ $*"; "$@"; fi; }
 pr() { gh pr view "$PR" --json "$1" -q "$2"; }
 
+# Worktree TẠM detached ở một commit — chạy phán quyết trên đúng commit đó mà không đụng worktree đang làm.
+TMP_WT=""
+drop_tmp() { if [ -n "$TMP_WT" ]; then git worktree remove --force "$TMP_WT" >/dev/null 2>&1 || true; TMP_WT=""; fi; }
+trap drop_tmp EXIT
+at_commit() {  # at_commit <sha> <lệnh...> — exit code của lệnh
+  local sha=$1 rc=0; shift; drop_tmp
+  TMP_WT="$(mktemp -d "${TMPDIR:-/tmp}/post-merge-XXXXXX")"; rmdir "$TMP_WT"
+  git worktree add --quiet --detach "$TMP_WT" "$sha" >/dev/null 2>&1 || { TMP_WT=""; return 2; }
+  ( cd "$TMP_WT" && "$@" ) || rc=$?
+  drop_tmp; return "$rc"
+}
+
 repo_root="$(git rev-parse --show-toplevel)"; cd "$repo_root"
 main_wt="$(git worktree list --porcelain | awk '/^worktree /{print substr($0,10); exit}')"
 this_repo="$(gh repo view --json nameWithOwner -q .nameWithOwner | tr '[:upper:]' '[:lower:]')"   # GitHub không phân biệt hoa/thường
 
 # ── 0. Kiểm trước ────────────────────────────────────────────────────────────
 [ "$(pr state .state)" = MERGED ] || die "PR #$PR chưa MERGED — không đóng/không dọn gì."
-# Còn check chưa xong (queued/in-progress/pending) ⇒ chưa có phán quyết cuối — dừng, không so "mới nhất"
-# (gh trả completedAt của run chưa xong là 0001-01-01…, sẽ thua run cũ đã xong).
-# EXPECTED = check BẮT BUỘC mà không ai post (vd workflow bị lọc paths) — chờ không bao giờ tự hết ⇒ báo riêng.
-expected="$(pr statusCheckRollup '[.statusCheckRollup[] | select(.state == "EXPECTED") | (.name // .context)] | join(", ")')"
-[ -z "$expected" ] || die "PR #$PR có check bắt buộc KHÔNG BAO GIỜ được chạy (EXPECTED): $expected — chờ không tự hết; xử lý tay (chạy lại workflow, hoặc xác nhận check không áp cho PR này rồi đóng vòng tay). Chưa đóng gì."
-pending="$(pr statusCheckRollup '[.statusCheckRollup[] | select((.status // "COMPLETED") != "COMPLETED" or .state == "PENDING") | (.name // .context)] | join(", ")')"
-[ -z "$pending" ] || die "PR #$PR còn check đang chờ/chạy: $pending — chờ phán quyết rồi chạy lại (QUEUED mãi, vd job chờ duyệt environment bị bỏ ⇒ xử lý tay). Chưa đóng gì."
-# Mới nhất theo (workflow, tên job): 2 workflow cùng có job `check` là 2 phán quyết riêng, không che nhau.
-LATEST='[.statusCheckRollup | group_by([(.workflowName // ""), (.name // .context)])[] | max_by(.completedAt // .startedAt // "")]'
-n_checks="$(pr statusCheckRollup "$LATEST | length")"
-[ "$n_checks" -gt 0 ] || die "PR #$PR không có check nào — không có phán quyết nghiệm thu, không đóng gì."
-bad="$(pr statusCheckRollup "$LATEST | map(select((.conclusion // .state) != \"SUCCESS\")) | map(\"\(.workflowName // \"\")/\(.name // .context)=\(.conclusion // .state)\") | join(\", \")")"
-[ -z "$bad" ] || die "PR #$PR có check (lần chạy mới nhất) chưa SUCCESS: $bad — chưa đạt nghiệm thu, không đóng gì."
 head="$(pr headRefName .headRefName)"; base="$(pr baseRefName .baseRefName)"
-cross="$(pr isCrossRepository .isCrossRepository)"
-echo "✓ PR #$PR MERGED, $n_checks/$n_checks check SUCCESS (lần mới nhất) — $head → $base"
+cross="$(pr isCrossRepository .isCrossRepository)"; merge_sha="$(pr mergeCommit .mergeCommit.oid)"
+body="$(pr body .body)"
 git fetch --quiet --prune origin
+git cat-file -e "$merge_sha^{commit}" 2>/dev/null || die "Không thấy commit merge $merge_sha sau fetch — chưa đóng gì."
+
+# CI [OPT] — chỉ xét khi PR CÓ check. Còn check chưa xong ⇒ chưa có phán quyết cuối (gh trả completedAt của
+# run chưa xong là 0001-01-01…, sẽ thua run cũ đã xong). EXPECTED = check BẮT BUỘC không ai post (vd workflow
+# bị lọc paths) — chờ không bao giờ tự hết ⇒ báo riêng.
+n_all="$(pr statusCheckRollup '.statusCheckRollup | length')"
+if [ "$n_all" -gt 0 ]; then
+  expected="$(pr statusCheckRollup '[.statusCheckRollup[] | select(.state == "EXPECTED") | (.name // .context)] | join(", ")')"
+  [ -z "$expected" ] || die "PR #$PR có check bắt buộc KHÔNG BAO GIỜ được chạy (EXPECTED): $expected — chờ không tự hết; xử lý tay (chạy lại workflow, hoặc bỏ yêu cầu check đó). Chưa đóng gì."
+  pending="$(pr statusCheckRollup '[.statusCheckRollup[] | select((.status // "COMPLETED") != "COMPLETED" or .state == "PENDING") | (.name // .context)] | join(", ")')"
+  [ -z "$pending" ] || die "PR #$PR còn check đang chờ/chạy: $pending — chờ rồi chạy lại (QUEUED mãi ⇒ xử lý tay). Chưa đóng gì."
+  # Mới nhất theo (workflow, tên job): 2 workflow cùng có job `check` là 2 phán quyết riêng, không che nhau.
+  LATEST='[.statusCheckRollup | group_by([(.workflowName // ""), (.name // .context)])[] | max_by(.completedAt // .startedAt // "")]'
+  bad="$(pr statusCheckRollup "$LATEST | map(select((.conclusion // .state) != \"SUCCESS\")) | map(\"\(.workflowName // \"\")/\(.name // .context)=\(.conclusion // .state)\") | join(\", \")")"
+  [ -z "$bad" ] || die "PR #$PR có check CI (lần mới nhất) chưa SUCCESS: $bad — không đóng gì."
+  ci_note="CI $(pr statusCheckRollup "$LATEST | length") check SUCCESS"
+else
+  ci_note="không có CI (tuỳ chọn)"
+fi
+
+# PHÁN QUYẾT — chạy lại ở máy, trên chính commit merge (không tin lời khai trong PR, không cần CI).
+echo "· Phán quyết: check.sh --acceptance trên commit merge ${merge_sha:0:7} (worktree tạm) …"
+rc=0; out="$(at_commit "$merge_sha" env PR_BODY="$body" ./scripts/check.sh --acceptance 2>&1)" || rc=$?
+printf '%s\n' "$out" | sed -n 's/^\(  [✓✗⊘].*\)$/  \1/p'
+[ "$rc" -eq 0 ] || die "Nghiệm thu trên commit merge ${merge_sha:0:7} ĐỎ (exit=$rc) — xem dòng ✗ ở trên. Đơn vị KHÔNG ĐẠT ⇒ nhánh $base đang hỏng, báo người (GIT-FLOW thông báo 4); Issue bị đóng mà thiếu đơn vị ⇒ khai đơn vị. Sửa bằng PR mới. Chưa đóng gì."
+echo "✓ PR #$PR MERGED · nghiệm thu XANH trên ${merge_sha:0:7} · $ci_note — $head → $base"
 
 clean=0; wt=""
 if [[ "$head" == agent/* ]] && [ "$cross" = false ]; then
@@ -121,17 +153,24 @@ for epic in $epics; do
   [ -z "$open_children" ] || { echo "  · Epic #$epic còn:$open_children — chưa đóng"; continue; }
   unit_dir="acceptance/epic/$epic"
   if git ls-tree -d --name-only "origin/$base" -- "$unit_dir" | grep -q .; then
-    if [ "$DRY" -eq 1 ]; then
-      echo "  [dry-run] sẽ chạy: ACCEPTANCE_DIR=$unit_dir ./scripts/check.sh --acceptance (trên origin/$base)"
-    else
-      [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$base")" ] \
-        || { echo "  ✗ Epic #$epic có nghiệm thu riêng: cần HEAD == origin/$base để chạy (git switch --detach origin/$base) — chưa đóng"; continue; }
-      PR_BODY= ACCEPTANCE_DIR="$unit_dir" ./scripts/check.sh --acceptance >/dev/null 2>&1 \
-        || { echo "  ✗ Epic #$epic: mọi con đã đóng nhưng $unit_dir ĐỎ — chưa đóng"; continue; }
-      echo "  ✓ $unit_dir XANH"
-    fi
+    at_commit "origin/$base" env PR_BODY= ACCEPTANCE_DIR="$unit_dir" ./scripts/check.sh --acceptance >/dev/null 2>&1 \
+      || { echo "  ✗ Epic #$epic: mọi con đã đóng nhưng $unit_dir ĐỎ trên origin/$base — chưa đóng"; continue; }
+    echo "  ✓ $unit_dir XANH (origin/$base)"
   fi
   run gh issue close "$epic" --comment "Mọi Issue con đã đóng (cuối cùng: PR #$PR) và nghiệm thu của epic XANH (post-merge.sh)."
+done
+
+# ── 2b. Plan → Epic/Story (thay cho workflow CI) ─────────────────────────────
+echo; echo "2b. Plan (docs/superpowers/plans/) PR này thêm/sửa"
+plans="$(pr files '.files[].path' | grep -E '^docs/superpowers/plans/[^/]+\.md$' || true)"
+plan_fail=""
+[ -n "$plans" ] || echo "  (không có)"
+for plan in $plans; do
+  git cat-file -e "$merge_sha:$plan" 2>/dev/null || { echo "  · $plan đã bị xoá trong PR — bỏ qua"; continue; }
+  flag=(); [ "$DRY" -eq 1 ] && flag=(--dry-run)
+  if at_commit "$merge_sha" python3 scripts/plan-to-issues.py "$plan" ${flag[@]+"${flag[@]}"}; then :; else
+    echo "  ✗ $plan: plan-to-issues ĐỎ — không chặn bước dọn, nhưng script sẽ thoát mã 1"; plan_fail="$plan_fail $plan"
+  fi
 done
 
 # ── 3. Dọn worktree + nhánh ──────────────────────────────────────────────────
@@ -144,4 +183,5 @@ if [ "$clean" -eq 1 ]; then
 else
   echo "  · bỏ qua (xem bước 0)"
 fi
+[ -z "$plan_fail" ] || { echo; echo "✗ Đóng vòng PR #$PR xong NHƯNG plan ĐỎ:$plan_fail — sửa plan qua PR mới (GIT-FLOW.md § \"Plan → Epic/Story\")." >&2; exit 1; }
 echo; echo "✓ Đóng vòng PR #$PR xong. Còn lại: cập nhật HANDOFF.md (AGENT.md §7 bước 8)."

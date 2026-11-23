@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# scripts/check.sh — cổng chất lượng DUY NHẤT. Máy dev VÀ CI đều gọi ĐÚNG script này — không viết lại
-# logic kiểm trong .github/workflows/*.yml (nguồn kinh điển của "máy tôi xanh mà CI đỏ", GIT-FLOW.md).
+# scripts/check.sh — cổng chất lượng DUY NHẤT. LOCAL-FIRST: máy dev/agent, hook pre-push và post-merge.sh
+# gọi ĐÚNG script này; CI là [OPT] (GitHub giới hạn Actions) và nếu bật cũng chỉ gọi script này — không
+# viết lại logic kiểm trong .github/workflows/*.yml ("máy tôi xanh mà CI đỏ", GIT-FLOW.md).
 #
 # Script, không Makefile: máy dev/run có thể KHÔNG có `make`; nếu project bạn chắc chắn có `make`, gọi
 # lại từ đó (`check: ; ./scripts/check.sh`), đừng viết trùng logic.
@@ -89,10 +90,11 @@ run_tests() {
 # Không có đơn vị nào = SKIP (hiện cảnh báo, không đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
 # Issue BẮT BUỘC có đơn vị (thiếu acceptance/<N>-*.sh = ĐỎ — ép bằng máy, CLAUDE.md L7). Lấy từ ĐÚNG MỘT nguồn:
 #   (a) ACCEPTANCE_REQUIRED_IDS="42 43" nếu KHÁC RỖNG — ghi đè (b)/(c);
-#   (b) ở CI (PR_BODY được truyền, kể cả rỗng): CHỈ từ khoá đóng của GitHub `Closes/Fixes/Resolves[:] #N`
-#       — PR chỉ `Refs #42` thì không bị đòi, dù nhánh tên agent/42-*;
-#   (c) ở máy dev (không có PR_BODY): tên nhánh `agent/<N>-<slug>` — xấp xỉ (b), KHỚP CI khi PR của nhánh
-#       đóng đúng #N. Khác nhau (vd PR đóng #43 từ agent/42-*) thì CI là phán quyết.
+#   (b) khi PR_BODY được truyền (kể cả rỗng) — post-merge.sh tự truyền mô tả PR; tay:
+#       PR_BODY="$(gh pr view <N> --json body -q .body)"; CI [OPT] cũng truyền: CHỈ từ khoá đóng của GitHub
+#       `Closes/Fixes/Resolves[:] #N` — PR chỉ `Refs #42` thì không bị đòi, dù nhánh tên agent/42-*;
+#   (c) không có PR_BODY: tên nhánh `agent/<N>-<slug>` — xấp xỉ (b), KHỚP khi PR của nhánh đóng đúng #N.
+#       Khác nhau (vd PR đóng #43 từ agent/42-*) thì (b) — tức lần chạy lại trong post-merge.sh — là phán quyết.
 # KHÔNG bắt được: đóng Issue qua URL đầy đủ, qua sidebar "Development", qua từ khoá trong commit message.
 # N2: đơn vị chỉ CHẤM LẠI snapshot đã đóng băng — KHÔNG gọi model sống ở đây (đó là tầng B).
 acceptance_ids() {
