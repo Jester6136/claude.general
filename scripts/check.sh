@@ -81,11 +81,74 @@ run_tests() {
   skip "TODO: điền lệnh test tầng A ở scripts/check.sh::run_tests (mode=$mode)"
 }
 
+# ── Nghiệm thu TẤT ĐỊNH (AGENT.md §4) — chạy riêng bằng --acceptance ─────────
+# Mỗi đơn vị = một file acceptance/<issue-id>-<slug>.sh. Exit 0 = ĐẠT · 77 = không chạy được (thiếu dữ
+# liệu/hạ tầng) · khác = KHÔNG ĐẠT. KHÁC các bước trên: SKIP (77) tính là ĐỎ — một đơn vị nghiệm thu đã
+# khai mà không chạy được thì chưa nghiệm thu. Mỗi đơn vị chạy 2 lần; PHÁN QUYẾT lệch = FLAKY = ĐỎ (không
+# tất định thì không được làm phán quyết; 2 lần chỉ bắt lệch THÔ, không chứng minh tất định).
+# Không có đơn vị nào = SKIP (hiện cảnh báo, không đỏ — repo mới chưa nghiệm thu gì là hợp lệ).
+# Issue BẮT BUỘC có đơn vị (thiếu acceptance/<N>-*.sh = ĐỎ — ép bằng máy, CLAUDE.md L7). Lấy từ ĐÚNG MỘT nguồn:
+#   (a) ACCEPTANCE_REQUIRED_IDS="42 43" nếu KHÁC RỖNG — ghi đè (b)/(c);
+#   (b) ở CI (PR_BODY được truyền, kể cả rỗng): CHỈ từ khoá đóng của GitHub `Closes/Fixes/Resolves[:] #N`
+#       — PR chỉ `Refs #42` thì không bị đòi, dù nhánh tên agent/42-*;
+#   (c) ở máy dev (không có PR_BODY): tên nhánh `agent/<N>-<slug>` — xấp xỉ (b), KHỚP CI khi PR của nhánh
+#       đóng đúng #N. Khác nhau (vd PR đóng #43 từ agent/42-*) thì CI là phán quyết.
+# KHÔNG bắt được: đóng Issue qua URL đầy đủ, qua sidebar "Development", qua từ khoá trong commit message.
+# N2: đơn vị chỉ CHẤM LẠI snapshot đã đóng băng — KHÔNG gọi model sống ở đây (đó là tầng B).
+acceptance_ids() {
+  if [ -n "${ACCEPTANCE_REQUIRED_IDS:-}" ]; then echo "$ACCEPTANCE_REQUIRED_IDS"; return 0; fi
+  if [ -n "${PR_BODY+x}" ]; then
+    printf '%s\n' "$PR_BODY" \
+      | grep -oiE '(^|[^[:alnum:]_])(close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' \
+      | grep -oE '#[0-9]+' | tr -d '#' | sort -u | tr '\n' ' ' || true
+  else
+    git rev-parse --abbrev-ref HEAD 2>/dev/null | sed -nE 's#^agent/([0-9]+)-.*#\1#p' || true
+  fi
+}
+verdict_of() { case "$1" in 0) echo ĐẠT ;; 77) echo KHÔNG-CHẠY ;; *) echo KHÔNG-ĐẠT ;; esac; }
+run_acceptance() {
+  echo
+  echo "Nghiệm thu tất định (acceptance/*.sh, mỗi đơn vị chạy 2 lần)"
+  local dir="${ACCEPTANCE_DIR:-acceptance}" unit rc1 rc2 v1 v2 id n=0
+  local ids; ids="$(acceptance_ids)"
+  echo "  · Issue bắt buộc có đơn vị nghiệm thu: ${ids:-(không có)}"
+  local -a id_list=(); read -ra id_list <<<"$ids" || true   # read -ra: tách theo khoảng trắng, KHÔNG glob
+  for id in ${id_list[@]+"${id_list[@]}"}; do
+    if ! [[ "$id" =~ ^[0-9]+$ ]]; then
+      fail "ID Issue không hợp lệ '$id' (chỉ nhận số, vd ACCEPTANCE_REQUIRED_IDS=\"42 43\")"; continue
+    fi
+    if compgen -G "$dir/$id-*.sh" >/dev/null; then
+      pass "Issue #$id có đơn vị nghiệm thu"
+    else
+      fail "Issue #$id được đóng nhưng KHÔNG có $dir/$id-*.sh — khai đơn vị nghiệm thu trước khi merge"
+    fi
+  done
+  for unit in "$dir"/*.sh; do
+    [ -e "$unit" ] || continue
+    n=$((n+1))
+    rc1=0; bash "$unit" >/dev/null 2>&1 || rc1=$?
+    rc2=0; bash "$unit" >/dev/null 2>&1 || rc2=$?
+    v1=$(verdict_of "$rc1"); v2=$(verdict_of "$rc2")
+    if [ "$v1" != "$v2" ]; then
+      fail "$unit — FLAKY: lần 1 $v1 (exit=$rc1), lần 2 $v2 (exit=$rc2) — cách ly + mở Issue, KHÔNG retry cho xanh"
+    elif [ "$v1" = KHÔNG-CHẠY ]; then
+      fail "$unit — không chạy được (exit 77): đơn vị đã khai mà không chạy = CHƯA nghiệm thu"
+    elif [ "$v1" = ĐẠT ]; then
+      pass "$unit"
+    else
+      fail "$unit — KHÔNG ĐẠT (exit=$rc1). Chạy tay để xem chi tiết: bash $unit"
+    fi
+  done
+  [ "$n" -eq 0 ] && skip "0 đơn vị nghiệm thu trong $dir/ — CHƯA nghiệm thu gì; việc đóng từ nay phải thêm đơn vị của nó"
+  return 0
+}
+
 case "$MODE" in
   --syntax)  run_syntax ;;
   --boundary) run_boundary ;;
   --lint)    run_lint ;;
   --smoke|--test|--pytest) run_tests ;;
+  --acceptance) run_acceptance ;;
   --all)
     run_syntax
     run_boundary
@@ -93,7 +156,7 @@ case "$MODE" in
     run_tests
     ;;
   *)
-    echo "Dùng: $0 [--syntax|--boundary|--lint|--smoke|--all]" >&2
+    echo "Dùng: $0 [--syntax|--boundary|--lint|--smoke|--all|--acceptance]" >&2
     exit 2
     ;;
 esac

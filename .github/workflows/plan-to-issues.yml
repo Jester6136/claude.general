@@ -1,0 +1,50 @@
+name: plan-to-issues
+
+# Plan (viết bằng superpowers:writing-plans, bản ghim = PINNED_VERSION trong script) được MERGE vào main ⇒ raise 1 Epic + N Story.
+# Merge trước = plan đã qua review trước khi sinh việc. Logic nằm trong scripts/plan-to-issues.py, không ở
+# đây (CI chỉ gọi script). Chạy lại an toàn: Issue đã raise (marker ẩn) thì bỏ qua. Plan sai định dạng ⇒
+# job ĐỎ, không tạo Issue nào. Xem GIT-FLOW.md § "Plan → Epic/Story".
+
+on:
+  push:
+    branches: [main]
+    paths: ["docs/superpowers/plans/**.md"]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: plan-to-issues   # không chạy song song — tránh 2 run cùng raise một plan
+  cancel-in-progress: false
+
+jobs:
+  raise:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Raise epic/story cho các plan vừa đổi
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          # --no-renames: plan đổi tên hiện là A (path mới). Phát hiện đổi tên nằm trong script (epic đang mở cùng
+          # tên mà plan cũ đã biến mất) — dựa trên marker, không dựa diff của MỘT lần push.
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            changed="$(git diff-tree --root --no-commit-id --no-renames --name-only --diff-filter=AM -r HEAD -- 'docs/superpowers/plans/*.md')"
+          else
+            changed="$(git diff --no-renames --name-only --diff-filter=AM "$BEFORE..HEAD" -- 'docs/superpowers/plans/*.md')"
+          fi
+          [ -n "$changed" ] || { echo "Không có plan thêm/sửa (chỉ xoá?) — không raise gì."; exit 0; }
+          # Mỗi plan độc lập: một plan đỏ KHÔNG làm bỏ sót plan khác trong cùng push; job đỏ nếu có plan đỏ.
+          failed=""
+          while read -r plan; do
+            echo "::group::$plan"
+            python3 scripts/plan-to-issues.py "$plan" || { failed="$failed $plan"; echo "::error file=$plan::plan-to-issues ĐỎ"; }
+            echo "::endgroup::"
+          done <<<"$changed"
+          [ -z "$failed" ] || { echo "Plan ĐỎ:$failed"; exit 1; }

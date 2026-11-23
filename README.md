@@ -8,13 +8,16 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 | File/thư mục | Vai trò |
 |---|---|
 | `CLAUDE.md` | Phương pháp luận viết tài liệu — Glossary/ADR/quy mô S-M-L/kỷ luật số. **Auto-load** mỗi phiên Claude Code. |
-| `AGENT.md` | Quy tắc vận hành agent — ranh giới hành động, kỷ luật hạ tầng, **§6 tự-review bắt buộc trước khi báo "xong"**, **§8 research web (học thuật + industry) TỰ ĐỘNG trước khi chốt phương án**. `CLAUDE.md` §0.5 bắt agent đọc file này mỗi phiên. |
-| `GIT-FLOW.md` | [OPT] Chi tiết đầy đủ mô hình Issue→worktree→PR→merge (chỉ đọc khi chọn O7-A ở `CLAUDE.md` §11). |
+| `AGENT.md` | Quy tắc vận hành agent — ranh giới hành động, kỷ luật hạ tầng, **§4 nghiệm thu TẤT ĐỊNH (N0 core · N1 phần mở rộng · N2 output LLM qua snapshot đóng băng)**, **§6 tự-review bắt buộc trước khi báo "xong"**, **§8 research web (học thuật + industry) TỰ ĐỘNG trước khi chốt phương án**. `CLAUDE.md` §0.5 bắt agent đọc file này mỗi phiên. |
+| `GIT-FLOW.md` | [OPT] Chi tiết đầy đủ mô hình Issue→worktree→PR→merge (chỉ đọc khi chọn O7-A ở `CLAUDE.md` §11). Chấp nhận = phán quyết nghiệm thu tất định, không phải merge hay review. |
+| `AI-PIPELINE.md` | [OPT] Audit minh bạch/provenance/độ tin cậy cho pipeline AI (trước là `CLAUDE.md` §6b). Mặc định BẬT khi có ≥2 tầng biến-đổi-dữ-liệu-bằng-AI. |
 | `templates/` | Copy-paste thẳng vào `docs/` project mới: `glossary.md` · `adr-log.md` · `context-map.md` · `README.md` (doc index) · `roadmap.md` · `HANDOFF.md` · `constitution.md` ([OPT]). |
 | `.github/ISSUE_TEMPLATE/` | `agent-ready.yml` (SPEC/PLAN) · `decision-needed.yml` — chỉ cần nếu dùng O7-A. |
 | `.github/PULL_REQUEST_TEMPLATE.md` | Checklist bằng chứng trước khi mở PR. |
 | `.github/workflows/check.yml` | CI gọi `scripts/check.sh --all` — điền TODO theo ngôn ngữ project. |
-| `scripts/check.sh` | Cổng chất lượng — khung 4 bước (syntax/boundary/lint/test), điền TODO. Máy dev VÀ CI gọi CÙNG script này. |
+| `scripts/check.sh` | Cổng chất lượng — khung 4 bước (syntax/boundary/lint/test), điền TODO · `--acceptance` chạy mọi đơn vị nghiệm thu tất định `acceptance/*.sh` (skip/flaky = ĐỎ, `AGENT.md` §4). Máy dev VÀ CI gọi CÙNG script này. |
+| `scripts/plan-to-issues.py` + `.github/workflows/plan-to-issues.yml` | Plan (superpowers `writing-plans`, bản ghim = `PINNED_VERSION` trong script, `--check-pin` để kiểm máy) merge vào `main` → 1 epic + N story `agent-ready`, mỗi story mang sẵn đơn vị nghiệm thu từ các cặp `Run:`/`Expected:`. Plan sai định dạng → từ chối, không tạo gì. |
+| `scripts/post-merge.sh` | Đóng vòng sau merge: chỉ chạy khi PR MERGED + mọi check SUCCESS → đóng Issue/epic, dọn worktree + nhánh local/remote. Có `--dry-run`. |
 | `scripts/install-hooks.sh` + `scripts/hooks/pre-push` | Cổng kỷ luật ở máy dev (git không version `.git/hooks`, phải tự cài). |
 
 ## Bootstrap một project mới — 1 ngày (Sprint 0, `CLAUDE.md` §10)
@@ -23,11 +26,14 @@ project thật (xem đầu `CLAUDE.md`). Không phải lý thuyết — mọi lu
 # 1. Copy khung vào repo mới
 cp claude.general/CLAUDE.md claude.general/AGENT.md <repo-mới>/
 cp claude.general/GIT-FLOW.md <repo-mới>/          # chỉ nếu dùng O7-A
+cp claude.general/AI-PIPELINE.md <repo-mới>/       # chỉ nếu có ≥2 tầng xử lý dữ liệu bằng AI
 mkdir -p <repo-mới>/docs
 cp claude.general/templates/*.md <repo-mới>/docs/
 cp -r claude.general/.github <repo-mới>/
 cp -r claude.general/scripts <repo-mới>/
 cd <repo-mới> && ./scripts/install-hooks.sh
+# superpowers (viết plan) + Playwright MCP (xem UI): dựng khi tới TRIGGER, theo
+# GIT-FLOW.md § "Bộ công cụ agent khi dựng O7-A" (ghim phiên bản, không @latest)
 ```
 
 2. **Thay mọi `<PROJ>`/`<...>`** trong các file vừa copy bằng tên/thông tin project thật.
@@ -40,11 +46,13 @@ cd <repo-mới> && ./scripts/install-hooks.sh
 7. Nếu >1 repo phụ thuộc chéo: đọc `GIT-FLOW.md` §11c trước khi tạo repo thứ 2 — quyết định monorepo
    hay polyrepo là quyết định thật, ghi lại như một ADR.
 
-## Vì sao tách CLAUDE.md / AGENT.md / GIT-FLOW.md thành 3 file
+## Vì sao tách thành nhiều file
 
 - `CLAUDE.md` = **VÌ SAO viết tài liệu thế nào** — phương pháp luận, không phụ thuộc project cụ thể.
 - `AGENT.md` = **agent được/không được làm gì** — vận hành, ranh giới, bằng chứng-trước-khi-tuyên-bố.
-- `GIT-FLOW.md` = **[OPT]** chi tiết mô hình git-as-task-tracker — tách riêng vì nó dài (~550 dòng) và
+- `GIT-FLOW.md` = **[OPT]** chi tiết mô hình git-as-task-tracker — tách riêng vì nó là phần dài nhất và
   chỉ cần khi đã chọn phương án đó; không phải mọi project cần tải nó mỗi phiên.
+- `AI-PIPELINE.md` = **[OPT]** audit độ tin cậy cho pipeline AI — chỉ project có pipeline AI nhiều tầng
+  mới cần.
 
 Một sự thật, một nhà — đúng nguyên tắc L2 mà chính `CLAUDE.md` đề ra cho các project dùng nó.

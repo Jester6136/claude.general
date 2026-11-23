@@ -12,6 +12,15 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+    # edited: thêm `Closes #N` vào mô tả PR sau khi CI đã xanh vẫn phải chạy lại kiểm đơn vị nghiệm thu.
+    types: [opened, synchronize, reopened, edited]
+
+# `edited` làm mỗi lần sửa mô tả PR chạy lại — huỷ run cũ CÙNG PR. Push lên main nhóm theo SHA ⇒ không
+# bao giờ huỷ nhau (mỗi merge commit phải có phán quyết riêng). Run bị huỷ để lại check CANCELLED;
+# post-merge.sh chỉ đọc lần chạy MỚI NHẤT của từng check nên không bị chặn oan.
+concurrency:
+  group: check-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -31,8 +40,21 @@ jobs:
       #     cache: pip
 
       - name: Cài dependency
+        id: deps
         run: |
           echo 'TODO: pip install -r requirements.txt (hoặc npm ci, v.v.)'
 
       - name: check.sh --all (static + smoke thuần + test plumbing)
         run: ./scripts/check.sh --all
+
+      # Phán quyết nghiệm thu TẤT ĐỊNH (AGENT.md §4.2): N0 · N1 replay · chấm lại snapshot N2. Đơn vị exit 77
+      # (không chạy được) = ĐỎ, flaky = ĐỎ, Issue được đóng mà thiếu đơn vị = ĐỎ. Không bao giờ gọi model
+      # sống ở đây — sinh snapshot/record cassette là tầng B. Vẫn chạy khi --all đỏ (phán quyết luôn phải
+      # hiện), nhưng KHÔNG chạy khi cài dependency hỏng (tránh đỏ dây chuyền che mất gốc rễ).
+      # Việc tách số Issue từ PR_BODY nằm trong check.sh, không trong YAML. Body đi qua env, KHÔNG nội suy
+      # ${{ }} thẳng vào script (tránh injection từ nội dung PR).
+      - name: check.sh --acceptance (nghiệm thu tất định)
+        if: ${{ !cancelled() && steps.deps.outcome == 'success' }}
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: ./scripts/check.sh --acceptance

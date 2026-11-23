@@ -19,10 +19,30 @@ body:
     attributes:
       label: "Vị trí file dự kiến chạm"
       placeholder: "src/module/foo.py, docs/algorithm.md §3"
+  - type: dropdown
+    id: acceptance_level
+    attributes:
+      label: "Cấp nghiệm thu (AGENT.md §4.1)"
+      description: "Phân theo VỊ TRÍ của thứ không tất định. Việc chạm nhiều cấp → chọn nhiều."
+      multiple: true
+      options:
+        - "N0 — core/platform: fake/stub thay thứ không tất định, assert chính xác"
+        - "N1 — phần mở rộng/domain: bộ contract test của CORE, replay cassette"
+        - "N2 — chất lượng output không tất định: golden set + snapshot có hash + bộ chấm tất định"
+    validations:
+      required: true
   - type: textarea
     id: acceptance
     attributes:
-      label: "Tiêu chí chấp nhận (chép từ nguồn, không tự viết lại)"
+      label: "Đơn vị nghiệm thu — lệnh + kết quả/ngưỡng mong đợi (KHAI TRƯỚC khi code)"
+      description: |
+        Phải TẤT ĐỊNH: cùng commit + cùng dữ liệu đóng băng ⇒ cùng phán quyết. "Chạy thử thấy output ổn",
+        LLM-judge chạy sống, kết quả /code-review đều KHÔNG phải tiêu chí. Ngưỡng N2 khai ở đây, không
+        chỉnh sau khi thấy số. Tiêu chí lấy từ nguồn thì trích nguyên văn rồi viết thành lệnh.
+      placeholder: |
+        acceptance/42-quota-closure.sh  (N0) → exit 0
+        N2: golden set eval/golden-v3 · model X@2026-10 · prompt v7 · bộ chấm exact-match trường `amount`
+            → ĐẠT khi ≥ 45/50 (90%), báo kèm mẫu số
     validations:
       required: true
   - type: textarea
@@ -30,6 +50,11 @@ body:
     attributes:
       label: "Phạm vi KHÔNG được đụng vào"
       description: "Giới hạn bán kính thiệt hại — càng cụ thể càng tốt."
+  - type: input
+    id: epic
+    attributes:
+      label: "Epic (nếu Issue này là một phần của epic)"
+      description: "#N của Issue nhãn `epic`. post-merge.sh đọc ô này để biết epic cần xét, nhưng epic chỉ THẤY ĐỦ con khi Issue này còn được link vào epic (sub-issue, hoặc dòng `- [ ] #<số này>` trong body epic) — thiếu link thì script cảnh báo. Issue sinh từ plan-to-issues.py được link tự động."
   - type: input
     id: blocked_by
     attributes:

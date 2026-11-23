@@ -14,7 +14,7 @@
 
 **Mục lục:** §0 cách đọc · **§0.5 bootstrap `AGENT.md` [BẮT BUỘC]** · **§1 bảy luật bất di bất dịch** · §2
 chọn quy mô S/M/L · §3 Tier 0 (4 file luôn có) · §4 danh mục theo tầng · §5 khuôn mẫu copy-paste · §6 kỷ
-luật số · **§6b minh bạch/provenance/độ tin cậy cho pipeline AI dày đặc** · §7 vòng đời + DoD · §8 ép
+luật số · §6b pipeline AI (chi tiết ở **`AI-PIPELINE.md`**) · §7 vòng đời + DoD · §8 ép
 bằng máy · §9 tra triệu chứng→luật · §10 Sprint 0 · **§11 các tuỳ chọn [OPT]** · §11b git làm hệ quản lý
 việc (chi tiết ở **`GIT-FLOW.md`** cạnh file này — chỉ đọc khi đã chọn O7-A) · §12 ba thứ không nên làm.
 
@@ -111,6 +111,10 @@ thật**:
 `lint-imports` → 5 kept, 0 broken · endpoint `/metrics` trả `denominator=5` (gọi **qua lớp proxy của
 dashboard**, tức đúng đường người dùng đi — không chỉ gọi thẳng backend).
 ```
+
+Ở mức **một việc** (Issue/§TODO), bằng chứng có dạng chuẩn: **đơn vị nghiệm thu tất định** — lệnh
+cho cùng phán quyết trên cùng commit + dữ liệu đóng băng, khai trước khi code; output sống của LLM hay
+"chạy thử thấy ổn" không phải bằng chứng (`AGENT.md` §4.1, nguồn duy nhất của định nghĩa).
 
 Ba biến thể phải phân biệt rõ trong tài liệu: `⬜ chưa làm` · `🔨 code xong CHƯA verify` · `✅ code+verify`.
 Gộp ba thứ này thành "done" là cách nhanh nhất để tài liệu bắt đầu nói dối.
@@ -228,44 +232,11 @@ Mermaid) · DDD strategic (Bounded Context/Context Map) · ADR Nygard.
 > **Nguồn:** <tài liệu/khảo sát/URL đã đọc TOÀN VĂN — không ghi nguồn chưa đọc>
 ```
 
-### 5.2 Mục từ Glossary
-```markdown
-| ID | Thuật ngữ | Định nghĩa | Trạng thái | Nguồn |
-|---|---|---|---|---|
-| GLOSS-<PROJ>-007 | Confidence Score | Điểm [0,1] do engine gán cho một giá trị trích xuất; KHÔNG phải xác suất đúng — chỉ dùng để xếp hạng và định tuyến | 🔒 Locked | ADR-<PROJ>-004 |
-```
-Kèm một mục **"Nhập nhằng đã giải quyết"**: hai khái niệm trùng tên nhưng khác nghĩa phải nói thẳng
-(*Risk Tier của Field* ≠ *tên tier `critical`/`normal` trong ngưỡng config* — chính nhầm lẫn này từng làm
-lệch cả một story).
-
-### 5.3 ADR (Nygard)
-```markdown
-## ADR-<PROJ>-001: <Quyết định, viết ở thể khẳng định>
-**Trạng thái:** Accepted (<PR/chat>, YYYY-MM-DD) | **Ngày:** YYYY-MM-DD
-
-### Bối cảnh
-<Vì sao phải quyết BÂY GIỜ. Rủi ro 2 chiều nếu chọn sai.>
-
-### Phương án đã xem xét
-| Phương án | Mô tả | Đánh giá | Nguồn tham khảo ngoài [OPT] |
-|---|---|---|---|
-| (a) … | … | **Chọn** — <lý do> | <link, ngày tra cứu — nếu có tiền lệ ngành ủng hộ> |
-| (b) … | … | Loại — <lý do CỤ THỂ, dẫn bằng chứng> | |
-| (c) … | … | Loại (chưa tới lúc) — Trigger B | |
-
-Cột cuối [OPT]: bỏ trống nếu quyết định thuần nội bộ, không có tương đương bên ngoài. Có ≥1 nguồn thì
-đây LÀ nơi ghi (không tách mục riêng) — cách research (khi nào bắt buộc, tối thiểu bao nhiêu nguồn độc
-lập, không suy đoán số ngành áp thẳng vào số của mình) thuộc `AGENT.md` §8, không lặp lại ở đây (L2 SSOT).
-
-### Quyết định
-<Chọn gì. Cơ chế hiện thực hoá nằm ở ADR nào.>
-
-### Hệ quả
-- **Tích cực:** …
-- **Tiêu cực:** … (phải có — ADR không có mặt trái là ADR chưa nghĩ đủ)
-- **Ràng buộc mới bắt buộc:** <thứ ép được bằng máy thì nói rõ, xem §8>
-- **Liên quan:** ADR-…, DOC-…
-```
+### 5.2 Mục từ Glossary · 5.3 ADR (Nygard)
+Khuôn đầy đủ: [`templates/glossary.md`](templates/glossary.md) · [`templates/adr-log.md`](templates/adr-log.md)
+— nguồn duy nhất, không chép lại ở đây (L2). Hai điểm hay bị bỏ khi điền: Glossary phải có mục **"Nhập
+nhằng đã giải quyết"** (*Risk Tier của Field* ≠ *tên tier `critical` trong config* — nhầm lẫn này từng làm
+lệch cả một story); ADR phải có **Hệ quả tiêu cực** (ADR không có mặt trái là ADR chưa nghĩ đủ).
 
 ### 5.4 Mục TODO / nhật ký sửa (mức S — dùng hằng ngày)
 ```markdown
@@ -275,21 +246,15 @@ lập, không suy đoán số ngành áp thẳng vào số của mình) thuộc 
 ```
 
 ### 5.5 HANDOFF
-```markdown
-# HANDOFF — <ngày>
-> ⚠Đừng tin nguyên văn — đối chiếu `git log`/code thật. Nguồn đầy đủ: <roadmap §TODO>.
-## 1. Vừa xong   ## 2. ĐANG DỞ (việc kế tiếp ngay + thứ đã kiểm sẵn)   ## 3. Việc còn mở
-## 4. Tham chiếu ngoài   ## 5. Trạng thái hạ tầng (đã verify <ngày>)
-```
-★ Mục 2 phải ghi cả **những gì đã kiểm sẵn** (danh sách bất biến đã grep, cấu trúc đã soi) — phiên sau
-không phải làm lại từ đầu.
+Khuôn: [`templates/HANDOFF.md`](templates/HANDOFF.md). ★ Mục "ĐANG DỞ" phải ghi cả **những gì đã kiểm
+sẵn** (bất biến đã grep, cấu trúc đã soi) — phiên sau không phải làm lại từ đầu.
 
 ---
 
 ## 6. Kỷ luật SỐ trong tài liệu (phần hay bị bỏ quên nhất)
 
 Áp cho **mọi tài liệu có con số**: báo cáo benchmark, dashboard, README khoe năng lực. Bốn mục đầu
-**[BẮT BUỘC]**; ba mục sau **[OPT]** — chỉ cần khi project thật sự có vòng đo lặp lại.
+**[BẮT BUỘC]**; bốn mục sau **[OPT]** — chỉ cần khi project thật sự có vòng đo lặp lại.
 
 1. **[BẮT BUỘC] Trung thực mẫu số.** Mọi tỉ lệ phải tự giải trình `denominator + Σ excluded == total`, và
    mọi đơn vị vào **đúng một** nhóm loại-trừ-lẫn-nhau. *Tiền lệ:* một project báo **66,4%**, sau phát hiện
@@ -314,62 +279,13 @@ không phải làm lại từ đầu.
 
 ---
 
-## 6b. [OPT — nhưng mặc định BẬT nếu project có ≥2 tầng biến-đổi-dữ-liệu-bằng-AI] Minh bạch — Provenance
-## — Độ tin cậy, cho pipeline AI dày đặc
+## 6b. [OPT — tách ra `AI-PIPELINE.md`] Minh bạch — Provenance — Độ tin cậy cho pipeline AI
 
-*Đúc từ một lần audit thật (2026-08-12) trên một hệ 3-repo (OCR/trích xuất → hoà giải đa nguồn → đồ thị
-tri thức → agent hội thoại). Mẫu n=1 hệ thống — đọc như "đây là 6 dạng lỗ hổng có thật, đã tìm và xác
-nhận bằng đọc code trực tiếp", không phải quy luật phổ quát; nhưng hình dạng lỗ hổng (constant giả làm đo
-thật, chuỗi provenance đứt ở ranh giới format, cơ chế chỉ tới tay vai vận hành chứ không tới tay
-end-user, nhãn cô lập khỏi số cần hiệu chuẩn, audit trail một chiều) đủ tổng quát để đưa vào playbook.*
-
-**Vì sao cần một mục riêng, tách khỏi §6:** §6 kiểm tra một con số đã tồn tại có được TRÌNH BÀY trung
-thực không (mẫu số, `None` vs `0.0`, coverage). Mục này đứng TRƯỚC §6 một bước — hỏi con số đó **có thật
-sự đo được cái nó tuyên bố đo** không, và nếu có, **nó có tới được người cần thấy nó** không. Một pipeline
-càng nhiều tầng biến đổi (OCR → LLM trích xuất → hoà giải → UI) thì càng dễ để tầng cuối "trông chắc
-chắn" trong khi không tầng nào bên dưới thật sự đo gì cả — mỗi tầng tự thấy hợp lý cục bộ, không ai audit
-xuyên suốt.
-
-**Bốn câu hỏi audit — dùng làm khung khi rà một pipeline AI, hoặc trả lời "người dùng có biết dữ liệu họ
-đưa vào chuyển hoá ra sao, tin được tới đâu, cải thiện được không" của owner/PM:**
-
-1. **Đo THẬT hay hằng số giả làm đo thật?** Với mọi trường `confidence`/`score`/`trust` trong hệ thống:
-   lần theo tới nơi nó được GÁN — là kết quả một phép đo (đếm nguồn đồng thuận, so khớp ground truth,
-   model tự chấm có hiệu chuẩn), hay là một hằng số cứng (`1.0`, `0.5`, mặc định)? *Anti-pattern đã gặp:*
-   một bước ingest gán `confidence=1.0` cho MỌI bản ghi bất kể chất lượng nguồn; một bước khác gán `0.5`
-   cứng làm "thấp hơn structured" — cả hai đều là placeholder ngụy trang thành phép đo, và mọi công thức
-   hoà giải phía sau (dù bản thân công thức ĐÚNG) thừa hưởng luôn sự giả đó. Một tín hiệu đồng thuận-giữa-
-   2-model (2 LLM cùng ra 1 giá trị) KHÔNG PHẢI confidence đã hiệu chuẩn — 2 model có thể cùng sai tương
-   quan (cùng đọc nhầm 1 kiểu lỗi) → đồng thuận cao nhưng giá trị sai. Đặt tên khác đi (`agreement`, không
-   phải `confidence`) để không ai nhầm gán nó thẳng vào trường tin cậy.
-2. **Tín hiệu tin cậy có tới ĐÚNG luồng người dùng hay dùng nhiều nhất không?** Một badge/chip tin cậy tồn
-   tại "ở đâu đó trong codebase" KHÔNG chứng minh người dùng thấy nó — kiểm theo **vai trò + luồng cụ
-   thể**, không phải theo tính năng. *Anti-pattern đã gặp:* badge trust/confidence dựng đầy đủ cho công cụ
-   vận hành (Steward/Admin), nhưng luồng chat chính mà end-user dùng nhiều nhất hoàn toàn không có — bộ
-   gom nguồn phía UI chỉ nhận diện được vài khoá JSON cố định (`{label, sub, href}`-kiểu); một tool khác
-   TRẢ VỀ đúng dữ liệu tin cậy cần thiết nhưng đặt tên khoá khác (`facts` thay vì `sources`) nên bộ gom
-   không bao giờ nhận ra — chuỗi provenance "đủ dữ liệu" nhưng đứt đúng ở ranh giới format UI, không đứt ở
-   backend. Audit bằng cách LẦN THEO một request thật từ điểm vào tới điểm hiện ra màn hình, không phải
-   liệt kê tính năng đã dựng.
-3. **Có ground-truth gán nhãn không, và nó hiệu chuẩn ĐÚNG con số cần hiệu chuẩn không?** "Có nhãn người"
-   và "nhãn đó hiệu chuẩn được số bạn đang tin" là hai câu khẳng định khác nhau — kiểm CẢ HAI. *Anti-
-   pattern đã gặp:* một pipeline trích xuất có hẳn quy trình gán nhãn người + đo precision/recall/F1 thật
-   — nhưng chỉ cho lỗi trích xuất TRƯỜNG, hoàn toàn cô lập khỏi ngưỡng hoà giải đa nguồn/điểm "độ trung
-   thực câu trả lời" ở tầng khác của cùng hệ thống. Có nhãn ở MỘT nơi dễ khiến người đọc báo cáo lầm tưởng
-   "hệ thống này có ground truth" theo nghĩa rộng, trong khi con số đang dùng ở nơi khác chưa từng chạm
-   nhãn nào.
-4. **Feedback được GHI hay được ĐỌC LẠI?** Một cơ chế ghi log/audit khi người dùng phản hồi (chấp
-   nhận/sửa/từ chối một đề xuất do AI tạo) là **audit trail MỘT CHIỀU** cho tới khi có thứ gì đó THẬT SỰ
-   đọc lại nó để đổi hành vi (prompt, ngưỡng, tập eval, cảnh báo tỉ lệ từ chối cao). *Anti-pattern đã
-   gặp:* ba đường ghi feedback riêng biệt, đủ dữ liệu, chạy ổn định nhiều tháng — grep toàn hệ thống cho
-   bất kỳ job/route nào ĐỌC LẠI các bảng đó để hành động: không có. Trước khi trả lời "agent có cải thiện
-   được không" bằng "có, vì chúng tôi ghi log" — hỏi tiếp: *ai đọc log đó, và làm gì khác đi sau khi đọc?*
-
-**Khi audit xong — sản phẩm là gì:** KHÔNG code ngay. Bốn câu hỏi trên thường lộ ra quyết định owner phải
-chốt hướng (đầu tư hiệu chuẩn ở đâu trước, mức độ hiện ra UI, có kích hoạt vòng cải thiện hay chưa) —
-đây đúng là loại nội dung "cần trao đổi trước khi thành việc code" mà §11b nói tới; xem
-**GIT-FLOW.md § mới "GitHub Discussions — trước khi thành Issue"** để biết đăng ở đâu, và **đừng** tự
-quyết thay owner rồi mở PR luôn.
+**[TRIGGER] đọc `AI-PIPELINE.md` cạnh file này khi project có ≥2 tầng biến-đổi-dữ-liệu-bằng-AI** (khi đó
+mặc định BẬT). Nó đứng trước §6 một bước: §6 hỏi con số có được *trình bày* trung thực không; file đó hỏi
+con số có *thật sự đo* cái nó tuyên bố không, và có *tới được* người cần thấy không — bốn câu hỏi audit
+(hằng số giả làm phép đo · tín hiệu tin cậy đứt ở ranh giới UI · nhãn không chạm con số đang tin ·
+feedback ghi mà không ai đọc lại).
 
 ---
 
@@ -438,7 +354,9 @@ doccheck:    ; markdownlint docs/ && python scripts/check_doc_ids.py
 | Phiên sau tin file trạng thái cũ rồi làm lại việc đã xong | L6 |
 | Bất biến kiến trúc bị phá dần dù tài liệu ghi rõ | L7 + §8 |
 | Số đẹp mà sai (66,4% → 45,0%) | §6.1–6.2 |
-| Tinh chỉnh ngưỡng mãi không cải thiện | §6.5 |
+| Tinh chỉnh ngưỡng mãi không cải thiện | §6.8 |
+| PR lúc đạt lúc không dù code không đổi (nghiệm thu bằng output LLM / LLM-review) | L5 + `AGENT.md` §4.1 |
+| CI xanh nhiều tháng mà không kiểm gì (mọi bước skip) | `AGENT.md` §4.2 |
 
 ---
 
@@ -498,23 +416,19 @@ thật): `GIT-FLOW.md` §11b "Kích hoạt O7-A giữa chừng".
 
 ## 11b. [OPT] Git làm hệ quản lý tài liệu & công việc — tách ra file riêng
 
-Phương án O7-A đầy đủ: **Issue = kho TODO · MR/PR = đơn vị review · merge = chấp nhận · CI = cổng máy.**
-Nội dung chi tiết (constitution.md · quy ước nhánh `agent/*` · run record · tách SPEC/PLAN · hệ sinh
-thái nhiều repo) đã chuyển sang **`GIT-FLOW.md`**, cạnh file này — lý do: đây là phần **[OPT]** dài nhất
-trong toàn bộ playbook, và chỉ project **đã chọn O7-A** mới cần agent tải nó mỗi phiên. Đúng L2 của
-chính file này (một sự thật, một nơi, nơi khác chỉ LINK): nếu bạn không dùng O7-A, đừng nạp thêm ~400
-dòng vào context của agent để làm gì.
-
-**Đọc `GIT-FLOW.md` khi nào:** đã chọn O7-A ở bảng §11 trên, hoặc đang cân nhắc chuyển sang mô hình đó.
-**Không cần đọc:** vẫn dùng phương án O7-B (sửa thẳng, ADR khi đảo quyết định) — quy trình đủ nhẹ để
-không cần bàn tới git-as-task-tracker.
+Chi tiết O7-A (Issue = đặc tả + đơn vị nghiệm thu · PR = đơn vị review · phán quyết nghiệm thu tất định
+= chấp nhận · merge = ghi nhận) ở **`GIT-FLOW.md`** cạnh file này. **Chỉ đọc khi đã chọn O7-A** hoặc đang
+cân nhắc chuyển sang — dùng O7-B thì đừng nạp nó vào context. Ngoại lệ: mục "Bộ công cụ agent khi dựng
+O7-A" — phần Playwright MCP áp cho mọi project có UI (AGENT.md §4.4), đọc riêng mục đó.
 
 ---
 
 ## 12. Ba thứ KHÔNG nên làm
 
-1. **Đừng chép quy trình nặng xuống quy mô nhỏ.** Discussion→Issue→ADR→PR + "Approved bất biến tuyệt
-   đối" hợp với team nhiều người; một người + tốc độ cao mà áp nguyên là tự trói.
+1. **Đừng nghiệm thu bằng thứ không tất định.** Output sống của LLM, LLM-judge chạy sống, kết quả
+   `/code-review`, "chạy thử thấy ổn" — đều có thể đổi kết luận khi chạy lại. Core cung cấp bộ chấm +
+   dữ liệu đóng băng; phần mở rộng (model mới, domain mới) qua đúng bộ đó (`AGENT.md` §4.1). (Lỗi "chép
+   quy trình nặng xuống quy mô nhỏ" — xem §2.)
 2. **Đừng viết tài liệu mô tả lại code.** Tài liệu trả lời **VÌ SAO** và **BẤT BIẾN NÀO**; cấu trúc code
    đọc từ code. Cái gì `git log` đã ghi thì đừng chép lại.
 3. **Đừng để tài liệu tự khen.** Câu "hệ thống đảm bảo độ chính xác cao" không có mẫu số thì không phải

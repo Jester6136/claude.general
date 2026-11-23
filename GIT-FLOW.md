@@ -15,16 +15,19 @@
 
 ## 11b. [OPT] Dùng chính GIT làm hệ quản lý tài liệu & công việc
 
-Phương án O7-A đầy đủ: **Issue = kho TODO · MR/PR = đơn vị review · merge = chấp nhận · CI = cổng máy.**
-Đây là cách bỏ được các file trạng thái tự viết (`ISSUES.md`, bảng TODO thủ công) — trạng thái sống ở
-nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown phải nhớ cập nhật bằng tay.
+Phương án O7-A đầy đủ: **Issue = kho TODO + nơi KHAI đơn vị nghiệm thu · PR = đơn vị review · phán quyết
+nghiệm thu tất định XANH = chấp nhận · merge = ghi nhận sự chấp nhận đó · CI = cổng máy.** Trạng thái
+sống ở nơi vốn đã có vòng đời (mở → gán → đóng), thay vì ở markdown phải nhớ cập nhật bằng tay.
 
-**Điều kiện đảo sang O7-A:** ≥2 agent chạy đồng thời trên cùng repo, đo độc lập với số người vận hành
-(`CLAUDE.md` §11, ngay dưới bảng O). Cơ chế: N agent cùng ghi vào một file `§TODO` tạo xung đột merge và
-không agent nào thấy agent khác đang làm gì; N agent mỗi con một Issue + worktree/branch
-(`agent/<issue-id>-<slug>`, xem dưới) + một PR cô lập việc theo agent — `git branch --list 'agent/*'`
-liệt kê đúng ai đang làm gì tại mọi thời điểm. Một người + một agent tại một thời điểm không cần O7-A;
-§TODO trong text (O7-B) đủ.
+**Điều kiện đảo sang O7-A:** `CLAUDE.md` §11, ngay dưới bảng O (số agent chạy đồng thời, không phải số
+người). `git branch --list 'agent/*'` liệt kê đúng ai đang làm gì tại mọi thời điểm.
+
+**Chấp nhận ≠ review ≠ merge.** Ba thứ trước đây bị gộp chung một chữ "merge = chấp nhận":
+- **Nghiệm thu** — phán quyết ĐẠT/KHÔNG ĐẠT, **tất định** (cùng commit + cùng dữ liệu đóng băng ⇒ cùng
+  phán quyết). Định nghĩa gốc + 3 cấp N0/N1/N2: `AGENT.md` §4.1 — không lặp lại ở đây.
+- **Review** — người/LLM đọc diff, **sinh finding**. Không tất định ⇒ KHÔNG được làm phán quyết; mỗi
+  finding phải được chuyển thành test tất định hoặc bác bỏ kèm lý do.
+- **Merge** — thao tác ghi nhận, chỉ hợp lệ khi nghiệm thu XANH và mọi finding đã xử lý.
 
 ### Toàn cảnh: git trở thành **mặt bàn điều hành** cho cả người lẫn agent
 
@@ -42,24 +45,26 @@ flowchart TB
     subgraph H["👤 NGƯỜI (chủ dự án) — đóng nhiều vai, chỉ ở 3 điểm"]
         H1["Vai CHỦ SẢN PHẨM<br/>mở Issue / duyệt Issue agent tự mở"]
         H2["Vai KIẾN TRÚC SƯ<br/>chủ trì Discussion → chốt quyết định → ADR"]
-        H3["Vai NGƯỜI GÁC CỔNG<br/>chạy skill code-review → tự merge HOẶC trao quyền Agent merge"]
+        H3["Vai NGƯỜI GÁC CỔNG<br/>đọc phán quyết + xử lý finding → tự merge HOẶC trao quyền Agent merge"]
     end
 
     subgraph G["🗃️ GIT — nơi công việc SỐNG (không phải nơi lưu trữ)"]
         DISC["💬 Discussion<br/>khảo sát/câu hỏi mở<br/>CHƯA đóng khung phương án"]
-        I["📋 Issue<br/>BẮT BUỘC nhãn <i>agent-ready</i> hoặc <i>decision-needed</i><br/>= hàng đợi việc + ĐẶC TẢ"]
+        I["📋 Issue<br/>BẮT BUỘC nhãn <i>agent-ready</i> hoặc <i>decision-needed</i><br/>= ĐẶC TẢ + ĐƠN VỊ NGHIỆM THU khai trước (N0/N1/N2 + ngưỡng)"]
         B["🌿 Branch/worktree riêng<br/>mỗi Issue một nhánh"]
-        P["🔀 PR/MR<br/>= báo cáo của agent, dạng DIFF"]
-        C{"🤖 CI<br/>make check"}
-        RV{"🔎 skill code-review<br/>BẮT BUỘC trước merge"}
-        M["✅ Merge<br/>= CHẤP NHẬN chính thức"]
+        P["🔀 PR/MR<br/>= báo cáo của agent, dạng DIFF + phán quyết"]
+        C{"🎯 CI — TẤT ĐỊNH<br/>check.sh --all + --acceptance<br/>= PHÁN QUYẾT nghiệm thu"}
+        RV["🔎 skill code-review — KHÔNG tất định<br/>BẮT BUỘC chạy, chỉ SINH finding"]
+        M["✅ Merge<br/>= ghi nhận phán quyết XANH"]
     end
 
     subgraph A["🤖 AGENT — làm việc trong ranh giới Issue"]
         A1["đọc Issue<br/>(REQ nguyên văn + phạm vi CẤM)"]
         A2["overlap scan<br/>đã có ai làm việc này chưa"]
+        A0["viết đơn vị nghiệm thu TRƯỚC<br/>chạy trên nhánh nền → phải ĐỎ"]
         A3["code + tự chạy cổng"]
         A4["mở PR/MR<br/>kèm Closes #NN"]
+        A6["mỗi finding → test tất định<br/>HOẶC bác bỏ kèm lý do"]
         A5["merge<br/>CHỈ khi được H3 trao quyền"]
     end
 
@@ -77,7 +82,7 @@ flowchart TB
     S1 -->|"trao đổi cùng"| DISC
     DISC -->|"đủ rõ để đóng khung → tốt nghiệp"| I
     H2 -->|"quyết định"| D2
-    I -->|"nhận brief"| A1 --> A2 --> A3 --> A4
+    I -->|"nhận brief"| A1 --> A2 --> A0 --> A3 --> A4
     A4 --> P
     B -.->|"nền của"| P
     A1 -.->|"đọc để hiểu ĐÚNG nghĩa"| D1
@@ -87,12 +92,13 @@ flowchart TB
     P --> C
     C -->|"ĐỎ → agent tự sửa, quay lại"| A3
     C -->|"XANH"| RV
-    RV -->|"có finding chặn → agent tự sửa"| A3
-    RV -->|"sạch"| H3
+    RV -->|"finding"| A6
+    A6 -->|"thành test → chạy lại cổng<br/>review lại CHỈ phần delta"| C
+    A6 -->|"mọi finding đã xử lý"| H3
     H3 -->|"tự merge"| M
     H3 -.->|"trao quyền"| A5
     A5 --> M
-    M -->|"Closes #NN → tự đóng"| I
+    M -->|"post-merge.sh: đóng Issue + EPIC<br/>dọn worktree/nhánh"| I
     M -->|"cập nhật trạng thái"| D4
     M -->|"bài học đáng nhớ"| D2
 
@@ -105,12 +111,12 @@ flowchart TB
     classDef stakeholder fill:#fecaca,stroke:#b91c1c,color:#1c1917
     class H1,H2,H3 human
     class DISC,I,B,P,C,RV,M git
-    class A1,A2,A3,A4,A5 agent
+    class A0,A1,A2,A3,A4,A5,A6 agent
     class D1,D2,D3,D4,D5 doc
     class S1 stakeholder
 ```
 
-**Đọc sơ đồ này ra sáu ý:**
+**Đọc sơ đồ này ra bảy ý:**
 1. **Người (chủ dự án) chỉ chạm 3 điểm** (mở việc · chốt quyết định · merge) — phần còn lại là agent +
    máy. Đó là cách một người đóng được nhiều vai mà không vỡ.
 2. **Issue là ĐẶC TẢ, không phải lời nhắc.** Viết Issue buộc người phải chốt phạm vi **trước khi** agent
@@ -124,8 +130,11 @@ flowchart TB
    quay lại Issue, không tự quyết. Không có mũi tên này thì Issue chỉ là hình thức.
 5. **Docs không nằm trong vòng lặp thực thi — chúng là thứ vòng lặp ĐỌC và GHI vào.** Agent đọc
    Glossary/ADR để hiểu đúng nghĩa; merge ghi ngược lại trạng thái + bài học.
-6. **CI xanh KHÔNG đủ để merge — còn phải qua skill `code-review` (G4)**, rồi H3 mới chọn tự merge hay
-   trao quyền Agent merge (A5) — chi tiết ở § "Năm cổng" dưới đây.
+6. **Phán quyết chỉ đến từ cổng TẤT ĐỊNH (C).** `code-review` (RV) bắt buộc chạy nhưng nằm NGOÀI đường
+   phán quyết: nó sinh finding, finding được biến thành test (rồi chính test đó phán quyết) hoặc bị bác
+   bỏ kèm lý do. Chạy lại RV ra finding khác cũng không làm phán quyết đổi — chi tiết § "Năm cổng".
+7. **Đơn vị nghiệm thu có trước code (A0).** Viết sau code thì nó đo cái code đã làm, không đo cái Issue
+   yêu cầu; và phải thấy nó ĐỎ trên nhánh nền mới biết nó đo được thay đổi (`AGENT.md` §4.1).
 
 ### `constitution.md` — [OPT] tầng luật riêng cho agent, tách khỏi ADR Log
 
@@ -158,18 +167,18 @@ sequenceDiagram
     participant C as ⚙️ CI
     participant R as 🔎 skill code-review
 
-    N->>G: mở Issue `agent-ready`
+    N->>G: mở Issue `agent-ready` (kèm đơn vị nghiệm thu + ngưỡng)
     G-->>A: giao việc (brief tự chứa)
-    A->>A: code + tự chạy cổng
+    A->>A: viết đơn vị nghiệm thu → thấy ĐỎ trên nhánh nền → code
     A->>G: mở MR (Closes #NN)
-    G->>C: kích hoạt pipeline
+    G->>C: check.sh --all + --acceptance
     C-->>A: ĐỎ → agent tự sửa, đẩy lại
     Note over A,C: vòng này KHÔNG làm phiền người
-    C-->>G: XANH
-    N->>R: chạy /code-review (BẮT BUỘC trước merge)
-    R-->>A: có finding chặn → agent tự sửa, đẩy lại
-    R-->>N: sạch → sẵn sàng merge
-    G-->>N: 🔔 (1) "MR sẵn sàng review"
+    C-->>G: XANH = phán quyết nghiệm thu
+    A->>R: chạy /code-review (BẮT BUỘC, ai merge cũng vậy)
+    R-->>A: finding
+    A->>G: mỗi finding → test mới (CI chạy lại) HOẶC bác bỏ kèm lý do
+    G-->>N: 🔔 (1) "MR: nghiệm thu XANH, finding đã xử lý"
     alt tự merge
         N->>G: đọc diff → merge
     else trao quyền cho Agent
@@ -186,13 +195,13 @@ sequenceDiagram
 
 | # | Đánh thức khi | Vì sao đáng làm phiền |
 |---|---|---|
-| 1 | `code-review` sạch, chờ merge | Đây là điểm người phải quyết (tự merge hay trao quyền) — không ai thay được |
+| 1 | Nghiệm thu XANH + mọi finding đã xử lý, chờ merge | Người duyệt các finding bị BÁC BỎ (chỗ duy nhất còn phán đoán) + quyết tự merge hay trao quyền |
 | 2 | Issue tự đóng | Xác nhận vòng đã khép, không cần theo dõi tay |
 | 3 | **Agent bị chặn / gặp chỗ mơ hồ** | Quan trọng nhất: thà bị đánh thức còn hơn để agent tự suy diễn |
 | 4 | Pipeline nhánh chính đỏ | Hỏng thứ đang chạy — khẩn |
 
-★ Thông báo (1) chỉ nổ khi cả CI lẫn `code-review` đều sạch — báo sớm hơn là gọi người tới xem một MR
-còn finding chưa xử lý, đúng thứ 4-thời-điểm này cố tránh.
+★ Thông báo (1) chỉ nổ khi phán quyết XANH và không còn finding bỏ trống — báo sớm hơn là gọi người tới
+xem một MR còn dở, đúng thứ 4-thời-điểm này cố tránh.
 
 ★ **KHÔNG** báo khi: agent đang code · CI đỏ ở nhánh feature (agent tự sửa) · mỗi commit. Báo mọi thứ =
 người tắt thông báo = mất luôn cả 4 cái quan trọng.
@@ -219,10 +228,11 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    "adr-log\.md"` trên toàn repo, sửa **mọi** file trỏ tới đường dẫn cũ — không chỉ file gọi trực tiếp.
 4. **Dựng scaffolding trước khi mở Issue đầu tiên:** `.github/ISSUE_TEMPLATE/{agent-ready,decision-
    needed}.yml` + `PULL_REQUEST_TEMPLATE.md` (mẫu ở `templates/`/`.github/` cạnh file này). Tạo label
-   `agent-ready`/`decision-needed` nếu repo chưa có (`gh label create`) — `gh issue create --label` báo
+   `agent-ready`/`decision-needed`/`epic` nếu repo chưa có (`gh label create`) — `gh issue create --label` báo
    lỗi nếu label chưa tồn tại.
 5. **Migrate JIT (just-in-time) cho việc CHƯA làm, không dump toàn bộ backlog.** Một mục `§TODO` chưa
-   đóng chỉ được viết thành Issue thật khi đủ 5 mục brief tự chứa (§7.3-tương-đương của `AGENT.md`) **và**
+   đóng chỉ được viết thành Issue thật khi điền đủ các trường bắt buộc của `agent-ready.yml` (kể cả đơn vị
+   nghiệm thu) **và**
    sắp được cầm lên làm — không mở Issue thô hàng loạt trước cho cả backlog (Issue là ĐẶC TẢ, viết TODO
    nguyên văn vào Issue không đạt chuẩn đó). `roadmap.md`/`§TODO` cũ đổi vai trò thành backlog + sổ lịch
    sử. Mục **đã đóng** trước ngày chuyển không bắt buộc có Issue, nhưng mở Issue rồi đóng ngay lúc tạo
@@ -236,6 +246,117 @@ rỗng) và vừa đạt điều kiện đảo (≥2 agent chạy đồng thời
    thời rà các số liệu liên quan đã đổi cùng thời điểm nhưng nằm ở file khác (vd một bảng đếm số test-đỏ
    ở file A không tự cập nhật khi test được sửa ở file B) — quét bằng cách tìm mọi chỗ trích dẫn cùng
    con số/đường dẫn vừa đổi, không chỉ sửa nơi trực tiếp liên quan đến thay đổi.
+
+### Bộ công cụ agent khi dựng O7-A — superpowers (viết plan) + Playwright MCP (xem giao diện)
+
+**Áp ở project dùng playbook này, không phải ở repo playbook.** Mục này đọc riêng được: phần Playwright MCP
+áp cho **mọi** project có UI, kể cả O7-B (CLAUDE.md §11b). Cả hai đều phải **ghim phiên bản**. Không
+dùng `@latest`, không dùng nhánh `main` của GitHub: thứ trôi theo upstream thì không cho phán quyết tất
+định (AGENT.md §4.1).
+
+**[TRIGGER] superpowers:** bật khi project bắt đầu viết plan nhiều task cho agent (đi kèm "Plan →
+Epic/Story" ngay dưới đây).
+
+```bash
+claude plugin install superpowers@anthropic-plugin-directory --scope project   # ghi .claude/settings.json
+python3 scripts/plan-to-issues.py --check-pin    # bản cài phải == PINNED_VERSION, lệch ⇒ đỏ
+```
+
+`.claude/settings.json` (commit) chỉ **bật** plugin cho mọi người mở repo; nó **không** ghim phiên bản. Bản
+cài nằm ở user-level `~/.claude/plugins/installed_plugins.json`, nên phần ghim được ép bằng `--check-pin`
+(xem ★ ở mục dưới). `plugin install` **không chọn được phiên bản**, nó cài bản hiện hành của directory.
+Bản đó khác `PINNED_VERSION` ⇒ `--check-pin` đỏ. Khi đó **không** sửa cho xanh: nâng ghim có chủ đích theo
+★ ở mục dưới (đọc toàn văn `SKILL.md` mới, cập nhật parser + `PINNED_*`, chạy lại bộ kiểm) qua một PR riêng.
+
+**[TRIGGER] Playwright MCP:** bật khi project có giao diện người dùng mà agent cần **nhìn** để sinh finding
+(vai trò ở AGENT.md §4.4: MCP để nhìn, test Playwright để phán quyết). Ghim ba lớp: gói MCP, toàn bộ cây phụ
+thuộc, và trình duyệt.
+
+`tools/playwright-mcp/package.json` (commit kèm `package-lock.json` để khoá cả cây phụ thuộc):
+
+```json
+{ "name": "playwright-mcp-pinned", "private": true, "dependencies": { "@playwright/mcp": "0.0.84" } }
+```
+
+`.mcp.json` gọi bản đã khoá, **không** gọi `npx @playwright/mcp@latest`:
+
+```json
+{ "mcpServers": { "playwright": { "command": "node", "args": [
+  "tools/playwright-mcp/node_modules/@playwright/mcp/cli.js",
+  "--browser", "chromium", "--headless", "--isolated", "--viewport-size", "1280x720" ] } } }
+```
+
+```bash
+npm install --prefix tools/playwright-mcp     # lần đầu: sinh package-lock.json → commit
+npm ci --prefix tools/playwright-mcp          # mọi máy sau: cài ĐÚNG theo lockfile
+node tools/playwright-mcp/node_modules/playwright-core/cli.js install chromium   # Chromium do playwright-core ghim
+for l in 'tools/playwright-mcp/node_modules/' '.playwright-mcp/'; do grep -qxF "$l" .gitignore 2>/dev/null || echo "$l" >> .gitignore; done
+```
+
+★ `--browser chromium` là bắt buộc. Không có nó, MCP dùng Chrome hệ thống, mà Chrome tự cập nhật. Số đo
+2026-11-23: Chrome hệ thống `157.0.8103.80`, Chromium do `playwright-core` của `0.0.84` ghim
+`157.0.8103.15`, tức đã lệch patch ngay trong cùng ngày. Plugin `playwright` chính thức chạy
+`npx @playwright/mcp@latest` nên không đạt yêu cầu ghim. Kiểm đã sống: handshake MCP trả 25 tool; mở trang
+thấy `HeadlessChrome/157`, viewport 1280×720.
+
+### Plan → Epic/Story — raise việc từ plan bằng máy
+
+Plan viết bằng skill `superpowers:writing-plans` (plugin `superpowers@anthropic-plugin-directory`, dựng theo
+mục ngay trên; **bản ghim = `PINNED_VERSION` trong `scripts/plan-to-issues.py`** — nguồn duy nhất), lưu ở
+`docs/superpowers/plans/YYYY-MM-DD-<feature>.md`, đi qua PR như mọi tài liệu. **Merge plan vào `main`** ⇒
+workflow `plan-to-issues.yml` gọi `scripts/plan-to-issues.py`:
+
+| Plan | Thành | Nội dung |
+|---|---|---|
+| cả file | 1 Issue nhãn `epic` | link `plan@SHA` (bất biến), Goal, task-list `- [ ] #N` các story |
+| mỗi `### Task N:` | 1 Issue nhãn `agent-ready` | đúng các mục của `agent-ready.yml`: khối task trích nguyên văn · Files · cấp N0 · **đơn vị nghiệm thu = các cặp `Run:`/`Expected:`** (FAIL = phải đỏ trên nhánh nền, PASS = phán quyết) · Epic · Blocked by (từ `Consumes: … Task k`) |
+
+Story được link vào epic hai đường (sub-issue + task-list) — `post-merge.sh` đóng epic khi story cuối
+xong. **Từ chối thay vì đoán:** plan thiếu H1/Goal/`**Files:**`, hoặc task không có cặp `Expected: … PASS`
+(= task không có đơn vị nghiệm thu) ⇒ job đỏ, **không tạo Issue nào**; plan còn thay đổi chưa commit ⇒ từ
+chối; task `Consumes:` trỏ task không đứng trước ⇒ từ chối; plan đã raise bị đổi tên/di chuyển ⇒ từ chối
+(marker theo path nên path mới trông như plan mới; dấu hiệu tất định: có epic **đang mở** cùng tên mà plan
+của nó đã biến mất ⇒ trả về path cũ, hoặc đóng epic cũ "superseded" rồi chạy lại). Mỗi plan trong một push
+xử lý độc lập — plan đỏ không làm bỏ sót plan khác. Chạy lại an toàn: marker ẩn — Issue đã raise thì bỏ
+qua; body epic chỉ được **nối** dòng story còn thiếu, không viết lại (giữ `[x]`, con thêm tay). Chạy tay:
+`scripts/plan-to-issues.py <plan> --dry-run`.
+
+★ **Vì sao ghim plugin và bám bản ĐÃ CÀI:** parser được viết theo `SKILL.md` của bản cài
+(`~/.claude/plugins/cache/anthropic-plugin-directory/superpowers/<PINNED_VERSION>/`), không theo nhánh
+`main` trên GitHub — nhánh `main` đổi bất kỳ lúc nào; bản ghim thì không. ⚠ `.claude/settings.json` chỉ
+**bật** plugin, **không** ghim phiên bản (bản cài nằm ở user-level `~/.claude/plugins/installed_plugins.json`)
+⇒ ghim được **ép bằng máy**: `scripts/plan-to-issues.py --check-pin` (cũng tự chạy mỗi lần raise) — máy
+có cài mà lệch `PINNED_VERSION` ⇒ từ chối; CI không cài plugin ⇒ chỉ áp định dạng của bản ghim. Chạy
+`--check-pin` sau khi cài/cập nhật plugin. Nâng phiên bản = đối chiếu lại `SKILL.md`, sửa `PINNED_*`, chạy
+lại bộ kiểm. Đó là thay đổi có chủ đích, không trôi ngầm. Phiên bản mà parser hiện bám đã đọc toàn văn
+`SKILL.md` của bản cài 2026-11-23, và bản đó trùng khớp `main` trên GitHub cùng ngày (diff rỗng, 204 dòng).
+
+### Sau merge — đóng vòng (Issue · Epic · nhánh · worktree)
+
+Merge chưa phải điểm cuối: Issue/epic còn mở, nhánh và worktree còn nằm đó thì "đang làm gì" (`gh issue
+list`, `git branch --list 'agent/*'`) bắt đầu nói dối. Đóng vòng bằng **một lệnh tất định**, không bằng trí
+nhớ: `scripts/post-merge.sh <PR>` (chạy `--dry-run` trước, từ worktree chính). Cổng vào: PR **MERGED** + không
+còn check đang chạy + lần chạy mới nhất của **mọi (workflow, job) SUCCESS** —
+không có check nào cũng là KHÔNG đạt (không có phán quyết thì không có gì để đóng).
+
+| Thứ | Đóng khi | Ai/cái gì đóng |
+|---|---|---|
+| **Issue** | PR có `Closes #N` merge + nghiệm thu XANH + `acceptance/<N>-*.sh` có trên `origin/<base>` | GitHub tự đóng; script đóng nốt cái bỏ sót, và **MỞ LẠI** Issue cùng repo bị đóng mà không có đơn vị (vd đóng qua commit message/sidebar — CI không thấy) |
+| **Epic** (nhãn `epic`) | **Mọi** Issue con đã đóng **VÀ** `acceptance/epic/<E>/*.sh` (nếu có) XANH trên `origin/<base>` | Script — con = **chỉ link tường minh**, định danh đủ `owner/repo#N`: sub-issue (đủ mọi trang, kể cả repo khác) ∪ dòng task-list `- [ ] [owner/repo]#N` trong body epic. Con chỉ tự khai ô "Epic" mà chưa link ⇒ cảnh báo, KHÔNG đóng epic |
+| **Worktree** | Nhánh của nó đã merge, worktree sạch | Script — `git worktree remove` KHÔNG `--force`; còn thay đổi chưa commit thì DỪNG, báo |
+| **Nhánh local/remote** | Đã xác nhận MERGED (cổng ở trên) và là `agent/*` của chính repo | Script — `branch -D` (squash/rebase làm `-d` từ chối) + `push --delete`. Nhánh khác (`develop`, fork) không bao giờ bị xoá |
+
+**Epic = tổng của các đơn vị nghiệm thu con, cộng (tuỳ chọn) một đơn vị nghiệm thu tích hợp của riêng
+nó.** Epic không có đơn vị riêng thì đóng khi mọi con đã đóng — mỗi con đã có phán quyết tất định của nó.
+Cần kiểm "các con ghép lại chạy đúng" thì khai trong `acceptance/epic/<E>/` lúc mở epic, cùng luật §4.1 —
+**thư mục riêng, không nằm ở `acceptance/*.sh`**, vì nó sẽ ĐỎ cho tới khi con cuối cùng xong và không được
+chặn PR của các con (`check.sh --acceptance` chỉ quét cấp trên cùng). Script dồn mọi điều kiện tiên quyết
+(MERGED, check, worktree sạch) lên TRƯỚC khi đóng bất cứ thứ gì — dừng giữa chừng thì chưa đổi gì.
+
+[OPT] Bật `delete_branch_on_merge` để GitHub tự xoá nhánh remote (`gh api -X PATCH repos/<o>/<r> -f
+delete_branch_on_merge=true`) — script vẫn cần cho worktree/nhánh local và epic, những thứ GitHub không
+dọn. *Đo 2026-11-23 trên repo playbook này:* cờ đang `false`, và `--dry-run` cho PR #1 (merge 2026-08-12)
+phát hiện nhánh remote `add-auto-web-research` vẫn còn sau hơn 3 tháng.
 
 ### Chia việc giữa Issue và Docs — giữ L2 (một loại sự thật, một nhà)
 Thêm Issue mà vẫn giữ bảng TODO trong docs = **hai nguồn sự thật**. Chia theo **tuổi thọ thông tin**:
@@ -261,29 +382,29 @@ nhánh** ở trên tránh được tranh cãi này: nhãn nằm ở cấp quy tr
 
 ### Năm cổng, theo thứ tự tăng dần chi phí
 
-| Cổng | Nội dung | Chi phí | Đáng làm khi |
-|---|---|---|---|
-| G1 **`make check`** | lint · typecheck · **import-linter** · test/smoke, gom một lệnh | thấp | luôn luôn |
-| G2 **CI chạy G1** | mỗi push/MR | thấp (nếu có runner) | luôn luôn |
-| G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | trung bình | sau khi G2 ổn định |
-| G4 **skill `code-review`** | người (hoặc agent, nếu được trao quyền merge) chạy `/code-review` trên diff, **BẮT BUỘC trước khi merge** — bất kể ai bấm merge | thấp (vài phút, một lệnh) | luôn luôn — điều kiện merge, không phải trigger theo số người |
-| G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | cao | **[TRIGGER]** ≥2 người thật |
+| Cổng | Nội dung | Tất định? | Chi phí | Đáng làm khi |
+|---|---|---|---|---|
+| G1 **`check.sh --all` + `--acceptance`** | lint · typecheck · import-linter · test/smoke + **mọi đơn vị nghiệm thu** (`AGENT.md` §4) | ✅ — **đây là phán quyết** | thấp | luôn luôn |
+| G2 **CI chạy G1** | mỗi push/MR | ✅ | thấp (nếu có runner) | luôn luôn |
+| G3 **Nhánh được bảo vệ** | cấm push thẳng; merge khi pipeline xanh | ✅ | trung bình | sau khi G2 ổn định |
+| G4 **skill `code-review`** (+ Playwright MCP cho UI) | **BẮT BUỘC chạy trước MỌI merge** (chốt 2026-09-13), ai bấm merge cũng vậy. Vai trò: **sinh finding**, KHÔNG phán quyết. Mỗi finding → test tất định (vào G1) hoặc bác bỏ kèm lý do trong PR | ❌ — nên không được chặn trực tiếp | thấp | luôn luôn |
+| G5 **Người duyệt** | approvals/CODEOWNERS, cấm tự merge | ❌ | cao | **[TRIGGER]** ≥2 người thật |
 
-★ Một mình thì G5 là **tự-review**, không phải review độc lập — giữ *checklist* (nó bắt được lỗi thật,
-kể cả lỗi tự mâu thuẫn trong header tài liệu), nhưng đừng gọi tên sai bản chất. **G4 không thay thế G5:**
-G4 chạy được ngay cả một mình; G5 cần một con người KHÁC — hai cổng độc lập, không cổng nào miễn trừ
-cổng kia.
+★ **Vì sao G4 không được làm cổng chặn trực tiếp:** chạy `/code-review` hai lần trên CÙNG diff có thể ra
+hai bộ finding khác nhau ⇒ "PR này đạt chưa?" phụ thuộc vào lần chạy nào — đúng thứ nghiệm thu tất định
+cấm. Chuyển finding thành test giữ được giá trị phát hiện của G4 mà phán quyết vẫn tất định, và lần sau
+test đó còn chặn hồi quy — finding chỉ nói một lần, test nói mãi. Finding không thể thành test (vd đặt
+tên, độ rõ ràng) → bác bỏ hoặc sửa, kèm một dòng lý do; người gác cổng duyệt các dòng bác bỏ đó.
+**Điểm dừng:** sau khi sửa finding, review lại **chỉ phần delta** (commit thêm kể từ lần review trước) —
+chạy lại toàn diff thì một bộ chấm không tất định sẽ sinh finding mới mãi, PR không bao giờ tới H3.
 
-**Sau khi G4 sạch, người gác cổng (H3) chọn một trong hai — cả hai đều yêu cầu G4 đã chạy, không có
-đường tắt:** tự merge (đọc diff, bấm như bình thường), hoặc **trao quyền cho Agent merge** (A5 ở sơ đồ
-trên) — cấp từng lần hoặc một lần cho cả loại Issue, ghi ở `constitution.md` § "Trao quyền merge cho
-Agent".
+★ Một mình thì G5 là **tự-review**, không phải review độc lập — đừng gọi tên sai bản chất. G4 không thay
+thế G5 và ngược lại.
+
+**Sau G1–G4, người gác cổng (H3) chọn:** tự merge, hoặc **trao quyền cho Agent merge** (A5) — cấp từng lần
+hoặc cho cả loại Issue, ghi ở `constitution.md` § "Trao quyền merge cho Agent".
 
 ### [OPT] GitHub Discussions — trước khi thành Issue
-
-Khoảng trống trước đây trong file này: "Discussion" xuất hiện ở đầu chuỗi O7-A
-(`Discussion → Issue → PR/MR → merge=Approved`, `CLAUDE.md` §11) nhưng chưa có nơi nào nói **Discussions
-là gì cụ thể trên GitHub, khi nào dùng, và ai đọc**. Mục này bù chỗ đó.
 
 **Đối tượng tham gia:** TechLead, Dev, BA join trực tiếp vào thread — không phải một mình chủ dự án tự
 hỏi tự trả lời. **Mục đích:** làm rõ phạm vi – quy mô – nghiệp vụ, và research cách thức, trước khi đóng
@@ -352,8 +473,9 @@ sẵn; tạo tay (`gh issue create` không qua template, hoặc import/retroacti
   nhau (áp dụng khi Issue đủ phức tạp để "cách làm" có thể sai dù "yêu cầu" đúng — Issue nhỏ giữ gộp
   như cũ):
   - **SPEC (bất biến trong phiên):** yêu cầu **trích nguyên văn** từ tài liệu nguồn (không diễn giải lại
-    — paraphrase là nơi hiểu sai chui vào) · vị trí file · tiêu chí chấp nhận · **phạm vi KHÔNG được
-    đụng** · **Blocked by**.
+    — paraphrase là nơi hiểu sai chui vào) · vị trí file · **đơn vị nghiệm thu: cấp N0/N1/N2 + lệnh +
+    kết quả/ngưỡng mong đợi** (`AGENT.md` §4.1 — "chạy thử thấy ổn" không phải tiêu chí) · **phạm vi
+    KHÔNG được đụng** · **Blocked by**.
   - **PLAN (agent điền, SỬA ĐƯỢC giữa chừng):** cách làm dự kiến · thứ tự bước · file dự kiến đụng tới.
     Cách làm sai thì sửa PLAN và ghi lại vì sao; **không** đóng Issue viết lại từ đầu, vì SPEC vẫn đúng.
 
@@ -400,40 +522,22 @@ lần sau không phải nghĩ lại từ đầu. Bối cảnh gốc: 3 repo Pyth
 | **Bật bao nhiêu luật lint** | **chỉ nhóm bắt lỗi thật** (lỗi cú pháp · so sánh sai · dùng tên chưa định nghĩa) | Bật cả bộ ra **337 lỗi**, phần lớn là style ⇒ cổng đỏ-sẵn → người ta tắt đi → mất luôn tác dụng. Nhóm hẹp đang xanh **và** bắt được lỗi thật (xem ngay dưới) |
 | **Bí mật (token) đi đường nào** | qua **tệp**, không qua chat/tham số dòng lệnh | Chat và lịch sử shell đều lưu lại vĩnh viễn. Script không in token ra, và bắt xoá tệp ngay sau khi dùng |
 
-★**Cổng vừa dựng đã bắt được bug thật ngay hôm đầu** — đây là lý lẽ mạnh nhất cho việc dựng cổng.
-Luật "dùng tên chưa định nghĩa" chỉ ra **4 chỗ** trong một tệp xử lý API dựng **closure ôm biến của khối
-`except`**:
+★**Cổng vừa dựng đã bắt được bug thật ngay hôm đầu** — lý lẽ mạnh nhất cho việc dựng cổng. Luật lint
+"dùng tên chưa định nghĩa" chỉ ra một closure ôm biến của khối `except` (Python `del exc` ngầm khi ra
+khỏi khối, closure chạy lúc stream ⇒ `NameError` thay vì thông báo hết quota). Sống nhiều tháng, mọi test
+xanh. Đã tái hiện bằng 8 dòng trước khi vá. Cùng mã lỗi nhưng một chỗ khác chỉ là annotation biến cục bộ
+(không đánh giá lúc chạy) — **đừng báo cáo lỗi thật và lỗi hình thức cùng một giọng**.
 
-```python
-except QuotaExceeded as exc:
-    def _deny():                  # ✗ closure chạy LÚC STREAM, tức là SAU khi khối except kết thúc
-        return f"hết quota: {exc.used}/{exc.limit}"     # NameError
-```
-
-Python **xoá tên đó** khi ra khỏi khối (`del exc` ngầm), mà closure chỉ chạy **lúc stream** — tức là sau
-đó. Hậu quả: người dùng **hết quota** nhận `NameError` thay vì thông báo hướng dẫn. Cách vá: **bắt giá
-trị ra biến thường ngay trong khối** (`used, limit = exc.used, exc.limit`) rồi để closure ôm biến đó.
-Đã **tái hiện bằng một đoạn 8 dòng trước khi vá** (đừng sửa theo suy đoán). Bug này sống trong code đã
-chạy nhiều tháng, mọi bài test đều xanh, không ai thấy.
-
-★**Phân biệt lỗi thật với lỗi hình thức** — cùng một mã lỗi nhưng khác hẳn về hậu quả: một chỗ thứ năm
-dùng kiểu chưa import (`List[str]`) trong **annotation của biến cục bộ** **không** gây lỗi runtime, vì
-Python **không đánh giá** annotation của biến cục bộ (khác annotation ở cấp module/class — đã kiểm bằng
-thực nghiệm, không đoán). Vẫn sửa, nhưng **đừng báo cáo hai thứ đó cùng một giọng**: gộp chúng làm một
-sẽ khiến người đọc hoặc hoảng thừa, hoặc quen tay bỏ qua cả hai.
-
-**Hai lỗi CHÍNH CÁI CỔNG tự gây ra — dựng cổng cũng phải kiểm cổng:**
-1. **Cổng tự tạo rác rồi tự vấp.** `compileall` rải `__pycache__` khắp cây mã; bước tìm module smoke
-   dùng `grep -rln` khớp trúng docstring **nằm trong `.pyc`** → sinh 10 "module" ma
-   (`src.services.__pycache__.reconcile.cpython-312.pyc`) → cổng **đỏ oan**. Vá hai đầu: đẩy bytecode
-   ra ngoài repo bằng `PYTHONPYCACHEPREFIX`, và `grep --include='*.py'`.
-2. **Thông báo có TÁC DỤNG PHỤ.** Dòng nhắc "cài bằng `pip install ruff`" viết trong chuỗi **nháy
-   kép** ⇒ bash coi backtick là **thay thế lệnh** và **chạy thật**, cài ruff vào môi trường máy khi lẽ
-   ra chỉ in một câu chữ. Một cổng kiểm tra **tuyệt đối không được đổi máy đang kiểm**. Dùng nháy đơn.
-
-★Và lỗi thứ ba, của người dùng cổng chứ không phải của cổng: nối `./check.sh | tail -2 && git commit`
-— **exit code của pipeline là của lệnh CUỐI** (`tail`, luôn 0) ⇒ commit vẫn chạy dù cổng ĐỎ. Muốn
-chặn thật thì đừng bọc cổng trong pipeline, hoặc bật `set -o pipefail`.
+**Dựng cổng cũng phải kiểm cổng** — bốn lỗi của chính cổng đã gặp:
+- **(1) Cổng tự tạo rác rồi tự vấp** (`__pycache__` → module ma) và **(2) thông báo có tác dụng phụ**
+  (backtick trong nháy kép chạy thật lệnh cài) — cả hai đã **ép bằng máy** trong `scripts/check.sh`
+  (comment đầu file), không nhắc lại ở đây (L7).
+- **(3)** `./check.sh | tail -2 && git commit` — exit code của pipeline là của `tail` ⇒ commit chạy dù
+  cổng ĐỎ. Đừng bọc cổng trong pipeline, hoặc bật `set -o pipefail`.
+- **(4) Xanh vì skip toàn bộ.** Đo ngày 2026-11-23 trên chính repo playbook này: CI báo `success` 5/5
+  lần chạy gần nhất (`gh run list -L 5`), `check.sh --all` cho `pass=0 fail=0 skip=4` — xanh mà không
+  kiểm gì. Vì vậy ở `--acceptance`: đơn vị đã khai mà không chạy được (exit 77) là ĐỎ, PR đóng Issue mà
+  thiếu đơn vị là ĐỎ; chỉ "repo chưa có đơn vị nào" là SKIP-kèm-cảnh-báo (`AGENT.md` §4.2).
 
 ### Khi KHÔNG có runner / KHÔNG đủ quyền — vẫn lấy được phần lớn giá trị
 
