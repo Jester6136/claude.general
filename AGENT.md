@@ -11,7 +11,7 @@
 thật · **§4 test & NGHIỆM THU TẤT ĐỊNH (N0/N1/N2 · UI qua Playwright)** · §5 commit/push · **§6 bằng chứng trước khi tuyên
 bố (tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A) ·
 **§8 research web (học thuật + industry) — TỰ ĐỘNG trước khi chốt phương án/root-cause khó** · **§9 đặt
-tên trong code/file LUÔN tiếng Anh**.
+tên trong code/file LUÔN tiếng Anh** · **§10 việc chạy nền: không vòng chờ, dọn tác vụ nền trước khi báo xong**.
 
 ---
 
@@ -280,3 +280,25 @@ phân biệt được nó với tiếng Anh, người đọc không phải ngư�
 tên nhánh hiện tại phải **chỉ gồm ký tự ASCII**. **Không** bắt được: tiếng Việt bỏ dấu, định danh trong code
 (mỗi ngôn ngữ một parser) ⇒ phần đó là kỷ luật + `/code-review` (G4): gặp tên không phải tiếng Anh thì là
 finding, sửa hoặc bác bỏ kèm lý do.
+
+## 10. Việc chạy nền — không vòng chờ, dọn sạch trước khi báo "xong"
+
+**Chờ lệnh của chính mình:** chạy CHÍNH lệnh dài ở chế độ nền (`run_in_background`) rồi đợi thông báo hoàn
+tất. **Không** viết vòng thăm dò (`until …; do sleep …; done`, `while …; sleep …`) để chờ lệnh mình vừa chạy:
+vòng chờ là một tác vụ nền riêng, không tự dừng khi lệnh gốc lỗi hay treo, và lấp đầy danh sách tác vụ nền
+của người dùng.
+
+**Ngoại lệ — trạng thái bên ngoài mà harness không báo được** (máy chủ lên lại sau khi khởi động, dịch vụ
+khoẻ lại, CI, triển khai): được dùng vòng chờ, nhưng **luôn có hạn**:
+`timeout 300 bash -c 'until curl -fsS <url>/health; do sleep 5; done'`. Hết hạn ⇒ báo lỗi, không chờ mãi.
+
+**Trước khi báo "xong" / gửi báo cáo cuối:** dừng mọi tác vụ nền mình đã mở (`TaskStop`), không để gì ở
+trạng thái "đang chạy". Cố ý để lại tác vụ nào thì nói rõ trong báo cáo: tác vụ gì, vì sao, ai dừng.
+
+**Người điều phối:** đưa luật này vào brief chung giao cho agent con. Agent đang chạy với brief cũ không tự
+biết luật mới, nên gửi thêm cho nó hoặc áp từ lượt giao việc sau.
+
+*Tiền lệ (datalens-agent, 2026-11-24):* danh sách tác vụ nền của người dùng còn "Wait for push to finish"
+(2 giờ), "Wait for acceptance and pytest runs" (1 giờ 47 phút), "Wait for push and PR creation" (1 giờ 27
+phút)… Đó là các vòng chờ agent con viết để chờ chính lệnh của mình, chạy song song với lệnh thật và
+không được dọn khi agent đã báo cáo.
