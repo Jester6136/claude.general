@@ -11,7 +11,8 @@
 thật · **§4 test & NGHIỆM THU TẤT ĐỊNH (N0/N1/N2 · UI qua Playwright)** · §5 commit/push · **§6 bằng chứng trước khi tuyên
 bố (tự-review bắt buộc)** · §7 vòng lặp Issue→PR (chi tiết ở `GIT-FLOW.md`, chỉ đọc khi đã chọn O7-A) ·
 **§8 research web (học thuật + industry) — TỰ ĐỘNG trước khi chốt phương án/root-cause khó** · **§9 đặt
-tên trong code/file LUÔN tiếng Anh** · **§10 việc chạy nền: không vòng chờ, dọn tác vụ nền trước khi báo xong**.
+tên trong code/file LUÔN tiếng Anh** · **§10 việc chạy nền: không vòng chờ, dọn tác vụ nền trước khi báo xong** · **§11 điều phối nhiều agent: token,
+chất lượng, tốc độ**.
 
 ---
 
@@ -302,3 +303,42 @@ biết luật mới, nên gửi thêm cho nó hoặc áp từ lượt giao việ
 (2 giờ), "Wait for acceptance and pytest runs" (1 giờ 47 phút), "Wait for push and PR creation" (1 giờ 27
 phút)… Đó là các vòng chờ agent con viết để chờ chính lệnh của mình, chạy song song với lệnh thật và
 không được dọn khi agent đã báo cáo.
+
+## 11. Điều phối nhiều agent — tối ưu token, chất lượng, tốc độ
+
+Áp khi một người điều phối (người hoặc agent) giao việc cho nhiều agent con chạy song song (O7-A). Sáu luật, xếp
+theo lợi ích trên công sức:
+
+1. **Phép kiểm rẻ mà làm đỏ nhánh nền thì vào cổng nhanh.** Phép kiểm nào chạy dưới ~10 giây (tên tiếng Anh
+   §9, cú pháp, import, tệp sinh) phải nằm trong `check.sh --fast`/hook `pre-push`, không chỉ trong bộ kiểm thử
+   đầy đủ. Agent hay bỏ bộ đầy đủ khi đang lặp; phép kiểm rẻ chỉ nằm ở đó sẽ lọt.
+2. **Người điều phối thức theo sự kiện, không theo nhịp dày.** Agent con xong việc tự đánh thức người điều
+   phối. Lịch đôn đốc định kỳ chỉ là lưới an toàn: 30–60 phút, không vài phút. Lượt "không có gì mới" vẫn nạp
+   lại toàn bộ ngữ cảnh của người điều phối — đó là chi phí lớn nhất của vai điều phối.
+3. **Model theo vai.** Agent triển khai (sửa lỗi, lát mới) dùng model rẻ hơn. Agent review độc lập giữ model
+   mạnh. Người điều phối giữ model mạnh.
+4. **Review theo rủi ro, và review phải CHẠY mã.**
+   - Đổi tên, sửa nhỏ, tài liệu: chỉ cổng tất định.
+   - Thay đổi lõi, luồng song song, đường dữ liệu người dùng thấy: thêm một agent review **độc lập** (không đưa
+     kết luận của người làm), yêu cầu **chạy mã** — dò trên kho câu hỏi/ca có thật, so với nhánh nền, thử đồng
+     thời — và chỉ báo lỗi đã tái hiện (tệp:dòng, đầu vào, thực tế vs kỳ vọng).
+   - Người điều phối tự chạy lại các phép dò của reviewer trên đầu nhánh đã sửa trước khi gộp (§6).
+   - `/code-review` mức thấp của chính người làm không thay được bước này: review chỉ đọc diff vài giây thường
+     báo "không có lỗi".
+5. **Kiểm thử song song, chọn theo tệp khi đang lặp.** Bộ kiểm thử đầy đủ chạy song song (`pytest -n`,
+   `pytest-xdist` ghim phiên bản; kiểm thử không chạy song song được thì đánh dấu và chạy riêng). Trong lúc
+   lặp, agent chạy kiểm thử liên quan tới tệp nó sửa; bộ đầy đủ chạy MỘT lần trước khi mở PR và một lần sau khi
+   gộp.
+6. **Kiểm chất lượng sống theo đợt.** Sau mỗi đợt gộp chạm lõi, người điều phối chạy một vòng N2 (§4.1) — kiểm,
+   không đóng băng. Đơn vị nghiệm thu chỉ kiểm đúng ca của Issue; hồi quy ở ca khác chỉ lộ ra ở vòng này.
+
+**Brief chung:** gom luật cho agent con vào MỘT tệp brief (nhánh, cổng, §9, §10, luật trên) và trỏ tới nó;
+không chép lại luật vào từng lời giao việc. Agent dừng mà chưa gửi báo cáo cuối ⇒ hỏi trạng thái một lần
+(nhánh, commit, cổng đã chạy), không giao lại từ đầu.
+
+*Tiền lệ (datalens-agent, 2026-11-25):* trong một ngày, nhánh nền đỏ hai lần vì một phép kiểm tên 5 giây chỉ
+nằm trong bộ kiểm thử 20 phút; hai PR được tự review "không có lỗi" bị reviewer độc lập chạy mã tìm ra lỗi
+thật (một PR làm nhiều câu hỏi bình thường bị hỏi lại oan, một PR có 5 lỗi gồm một hồi quy); một hồi quy qua
+được cổng nghiệm thu và chỉ lộ ở vòng N2 sau gộp; mỗi việc của agent triển khai tốn 300–400 nghìn token
+trên model mạnh nhất; phần lớn lượt đôn đốc định kỳ chỉ trả về "không có gì mới".
+
